@@ -133,7 +133,9 @@ void token::transfer( const name&    from,
                return;
          }
          /**
-         check(quantity >= asset(10000, symbol("XSOV", 4)),"send at least 1 XSOV");
+         code below for possible LP in ECPU V2, not utilized for V1
+         ---------------------------------------------------------------------
+         check(quantity >= asset(10000, symbol("XXX", 4)),"send at least 1 XXX");
          
          std::string user = from.to_string();
 
@@ -218,7 +220,7 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
    
    if(memo == "mine income for permanent pool"){
 
-         //vote for BPS, place into rex
+         //vote for reward BPS, place into rex
          //no further action
 
           action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
@@ -227,39 +229,36 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
           action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
           std::make_tuple(get_self(), quantity)).send();
 
-
           return;
          
    }
 
-   if(memo == "deposit"){
+   else if(memo == "deposit"){
 
 
-    check (quantity.amount >= 10000, "must deposit at least 1 EOS");
-    //LP related code below
+    check(quantity.amount >= 10000, "must deposit at least 1 EOS");
+    check(1!=1, "LP feature not availible with this version of ECPU");
+    //code below for possible LP in ECPU V2, not utilized for V1
+       //  ---------------------------------------------------------------------
     /**
     asset rexbalance = get_rexbalance( get_self());
-    asset safeissue = asset(1, symbol("XSOV", 4));
-    asset safecirculating = get_supply( get_self(), safeissue.symbol.code());
-
-   balance = balance - quantity;
-   long double safesupply = (long double)(safecirculating.amount)/10000;
-   long double sovpool = (long double)(balance.amount)/10000;
-   long double sovin = (long double)(quantity.amount)/10000;
-   long double result = sovin / (sovpool/safesupply);
-
-   result = result*99/100; 
-
+    asset safeissue = asset(1, symbol("CPULP", 4));
+    asset cpulpcirculating = get_supply( get_self(), cpulpissue.symbol.code());
 
   
+   long double cpulpsupply = (long double)(cpulpcirculating.amount)/10000;
+   long double eospool = (long double)(balance.amount)/10000;
+   long double eosin = (long double)(quantity.amount)/10000;
+   long double result = eosin / (eospool/cpulpsupply);
+
    result *= 10000;
    safeissue.amount = result;
 
    action(permission_level{_self, "active"_n}, "ecpulpholder"_n, "issue"_n, 
-   std::make_tuple(get_self(), safeissue, std::string("Issue XSOV Tokens"))).send();
+   std::make_tuple(get_self(), cpulpissue, std::string("Issue CPULP Tokens"))).send();
 
    action(permission_level{_self, "active"_n}, "ecpulpholder"_n, "transfer"_n, 
-   std::make_tuple(get_self(), from, safeissue, std::string("Transfer XSOV Tokens"))).send();
+   std::make_tuple(get_self(), from, cpulpissue, std::string("Transfer CPULP Tokens"))).send();
 **/
 
 
@@ -269,10 +268,22 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
    else{
 
    //find total supply of ECPU 
+   asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
    //find total stake of ECPU
+   asset ecpustake = get_ecpustake();
    // send stake/supply* received to iteration contract
-   //add to daily powerup counter
+   asset powerup = quantity; //initialization 
+   powerup = (ecpustake/ecpusupply)*quantity;
+   check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");
+   check(powerup < quantity, "error powerup amount shall always be < than received quantity");
 
+   action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+   std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Liquid EOS for powerup Distribution"))).send();
+   
+
+
+   //add to daily powerup counter
+    
 
 
 
