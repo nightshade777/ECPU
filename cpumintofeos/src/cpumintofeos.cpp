@@ -230,18 +230,21 @@ void token::close( const name& owner, const symbol& symbol )
 
 
 
-void token::stake(name account, asset value)
+void token::stake(name account, asset value, bool selfdelegate)
     {
-      //stake tokens for 24 hour CPU payouts
+      //stake tokens for 12 hour cpu powerups, only delegated stake, to self or others will receive poweups
+      //set self delegate to false if immediately delegating to others
+
       require_auth(account);
       require_recipient(account);
 
       require_recipient(name{"cpumintofeos"});
+      require_recipient(name{"cpupayouteos"});
 
     
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
-      const auto& st = statstable.get( sym.raw() );
+      const auto& st = statstable.get( sym.raw());
 
       uint32_t time_now = now();
       uint32_t one_day_time = 60*60*24;
@@ -276,6 +279,8 @@ void token::stake(name account, asset value)
           }
 
         });
+
+        updatestake(value);//update global var for tracking stake
     
     }
   
@@ -332,6 +337,8 @@ void token::stake(name account, asset value)
           a.unstake_time = time_now;
         
         });
+
+        updatestake(-value);
     
     }
 
@@ -369,11 +376,11 @@ void token::stake(name account, asset value)
       
       accounts from_acnts( _self, account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
-      check(to!=from_acnts.end(),"Lender must initialize CPU balance RAM");
+      check(to!=from_acnts.end(),"Lender must initialize ECPU balance RAM");
    
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          check((value <= a.cpupower ), "Cannot delegate more than your svxpower");
+          check((value <= a.cpupower ), "Cannot delegate more than your cpupower");
           a.cpupower -= value;
         });
       //add CPU power to borrower

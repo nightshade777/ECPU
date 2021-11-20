@@ -61,7 +61,7 @@ namespace eosio {
           
          
          [[eosio::action]]
-         void stake (name account, asset value);
+         void stake (name account, asset value, bool selfdelegate);
          
          [[eosio::action]]
          void unstake (name account, asset value);
@@ -199,8 +199,19 @@ namespace eosio {
             return issuereward;
 
     }
-    
-      
+
+    void updatestake(asset quantity){
+
+        auto sym = quantity.symbol;
+        stats statstable( get_self(), sym.code().raw() );
+        auto existing = statstable.find( sym.code().raw() );
+        const auto& st = *existing;
+        statstable.modify( st, same_payer, [&]( auto& s ) {
+            s.totalstake += quantity;
+        });
+}
+
+
       void mine(name from){
 
         int elapsedpm = now() - get_prevmine(get_self(), symbol_code("CPU"));

@@ -214,6 +214,10 @@
                 {
                     "name": "value",
                     "type": "asset"
+                },
+                {
+                    "name": "selfdelegate",
+                    "type": "bool"
                 }
             ]
         },
