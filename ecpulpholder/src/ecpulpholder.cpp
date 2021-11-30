@@ -22,7 +22,7 @@ void token::create( const name&   issuer,
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
-       s.staked        = maximum_supply-maximum_supply; //initialize to zero
+       s.totalstake        = maximum_supply-maximum_supply; //initialize to zero
     });
 }
 

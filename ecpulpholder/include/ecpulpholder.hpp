@@ -68,7 +68,7 @@ namespace eosio {
          {
             stats statstable( token_contract_account, sym_code.raw() );
             const auto& st = statstable.get( sym_code.raw() );
-            return st.staked;
+            return st.totalstake;
          }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -89,9 +89,9 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            int      prevmine;// var not used, utilized in order to pull from two different token contracts without requiring two structs
-            int      creationtime;
-            asset    totalstake;
+            int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
+            int      creationtime;//see above
+            asset    totalstake;//see above
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
 
             

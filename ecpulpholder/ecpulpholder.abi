@@ -58,7 +58,15 @@
                     "type": "name"
                 },
                 {
-                    "name": "staked",
+                    "name": "prevmine",
+                    "type": "int32"
+                },
+                {
+                    "name": "creationtime",
+                    "type": "int32"
+                },
+                {
+                    "name": "totalstake",
                     "type": "asset"
                 }
             ]
