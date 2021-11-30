@@ -262,13 +262,19 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
    action(permission_level{_self, "active"_n}, "ecpulpholder"_n, "transfer"_n, 
    std::make_tuple(get_self(), from, cpulpissue, std::string("Transfer CPULP Tokens"))).send();
 **/
-
-
    }
 
 
    else{
+   //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
+   asset liquidbal = get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
+   
+   action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+          std::make_tuple(get_self(), name{"voteproxy122"}, name{""})).send();
 
+          action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+          std::make_tuple(get_self(), liquidbal)).send();
+   
    //find total supply of ECPU 
    asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
    //find total stake of ECPU
@@ -279,9 +285,8 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
    check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
    check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
 
-   action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-   std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Liquid EOS for powerup Distribution"))).send();
-   
+   asset resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
+
 
 
    //add to daily powerup counter
