@@ -458,6 +458,13 @@ void token::stake(name account, asset value, bool selfdelegate)
      }
 
 
+void minereceipt( name user){
+    //no permissions required, this is simply to iterate the powerup payouts, it will be triggered by this contract when receiving eos
+    //from mining but can also be executed from any account as an auxilary help function to iterate the payout contract as well
+    require_recipient(name{"cpupayouteos"});
+
+
+}
     
 [[eosio::on_notify("eosio.token::transfer")]]void token::claim(name from, name to, eosio::asset quantity, std::string memo){
 
@@ -466,11 +473,13 @@ void token::stake(name account, asset value, bool selfdelegate)
          return;
    }
 
+   action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
+      std::make_tuple(from)).send();
+
    check(quantity.amount == 1, "Transfer amount to mine must be equal to 0.0001 EOS");
    
    mine(from);
-   
-
+  
 }
 
 

@@ -84,6 +84,9 @@ namespace eosio {
 
          [[eosio::action]] 
          void destroyacc(std::string symbol, name account);
+
+         [[eosio::action]] 
+         void minereceipt( name user);
          
          
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
