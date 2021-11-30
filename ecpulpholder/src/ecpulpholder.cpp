@@ -22,6 +22,7 @@ void token::create( const name&   issuer,
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
+       s.staked        = maximum_supply-maximum_supply; //initialize to zero
     });
 }
 
@@ -235,10 +236,11 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 
    else if(memo == "deposit"){
 
-
-    check(quantity.amount >= 10000, "must deposit at least 1 EOS");
-    check(1!=1, "LP feature not availible with this version of ECPU");
+      check(1!=1, "LP feature not availible with this version of ECPU");
+  
     //code below for possible LP in ECPU V2, not utilized for V1
+      //check(quantity.amount >= 10000, "must deposit at least 1 EOS");
+   
        //  ---------------------------------------------------------------------
     /**
     asset rexbalance = get_rexbalance( get_self());
@@ -270,12 +272,12 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
    //find total supply of ECPU 
    asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
    //find total stake of ECPU
-   asset ecpustake = get_ecpustake();
+   asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
    // send stake/supply* received to iteration contract
    asset powerup = quantity; //initialization 
-   powerup = (ecpustake/ecpusupply)*quantity;
-   check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");
-   check(powerup < quantity, "error powerup amount shall always be < than received quantity");
+   powerup = (double(ecpustake.amount))/(double(ecpusupply.amount))*quantity; //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
+   check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
+   check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
 
    action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
    std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Liquid EOS for powerup Distribution"))).send();
@@ -284,9 +286,6 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 
    //add to daily powerup counter
     
-
-
-
 
    }
    

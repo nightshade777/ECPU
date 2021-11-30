@@ -64,11 +64,11 @@ namespace eosio {
             return ac.balance;
          }
 
-         static asset get_ecpustake()
+         static asset get_ecpustake(const name& token_contract_account, const symbol_code& sym_code) // build struct from cpumintofeos account and pull total ecpu staked from table
          {
-            //accounts accountstable( token_contract_account, owner.value );
-            //const auto& ac = accountstable.get( sym_code.raw() );
-            //return ac.balance;
+            stats statstable( token_contract_account, sym_code.raw() );
+            const auto& st = statstable.get( sym_code.raw() );
+            return st.staked;
          }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -88,6 +88,7 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
+            asset    staked;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
