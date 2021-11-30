@@ -46,9 +46,17 @@ namespace eosio {
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
 
+         [[eosio::action]]
+         void instapowerup( const name& contract, name receiver, asset powerupamt );
 
          [[eosio::on_notify("eosio.token::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
+
+         [[eosio::on_notify("cpumintofeos::stake")]] 
+         void setstake(name account, asset value, bool selfdelegate);
+
+         [[eosio::on_notify("cpumintofeos::delegate")]] 
+         void setdelegate(name account, asset receiver, asset value);
 
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
          {
@@ -71,12 +79,20 @@ namespace eosio {
             return st.totalstake;
          }
 
+         static asset get_resevoir( const name& token_contract_account, const symbol_code& sym_code )
+         {
+            stats statstable( token_contract_account, sym_code.raw() );
+            const auto& st = statstable.get( sym_code.raw() );
+            return st.resevoir;
+         }
+
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
          using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
          using open_action = eosio::action_wrapper<"open"_n, &token::open>;
          using close_action = eosio::action_wrapper<"close"_n, &token::close>;
+      
       private:
          struct [[eosio::table]] account {
             asset    balance;
@@ -92,6 +108,7 @@ namespace eosio {
             int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
             int      creationtime;//see above
             asset    totalstake;//see above
+            asset    resevoir;//eos reserved for unstakers for 24 hours
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
 
             

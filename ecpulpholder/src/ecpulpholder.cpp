@@ -22,7 +22,8 @@ void token::create( const name&   issuer,
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
-       s.totalstake        = maximum_supply-maximum_supply; //initialize to zero
+       s.totalstake    = maximum_supply-maximum_supply; //initialize to token contract asset to zero (unused)
+       s.resevoir      = asset(0, symbol("EOS", 4)); //initialize with EOS asset to zero
     });
 }
 
@@ -201,6 +202,57 @@ void token::close( const name& owner, const symbol& symbol )
    check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
    check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
    acnts.erase( it );
+}
+
+void instapowerup( const name& contract, name receiver, asset powerupamt ){
+
+   require_auth(contract);
+   require_recipient(name{"cpupayouteos"});
+
+}
+
+[[eosio::on_notify("cpumintofeos::stake")]] 
+void token::setstake(name account, asset value, bool selfdelegate){
+
+     //if delegating in middle of round, send corresponding proportion from resevoir and powerup account immediately
+
+     asset powerup; 
+     asset ecpusupply;
+     asset resevoir;
+
+     if (selfdelegate == true){
+         ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
+         resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
+         
+         powerup = (double(value.amount))/(double(ecpusupply.amount))*resevoir;
+
+         action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
+               std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
+               
+         action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
+               std::make_tuple(get_self(), account, powerup)).send();
+         
+     }
+}
+[[eosio::on_notify("cpumintofeos::delegate")]] 
+void token::setdelegate(name account, asset receiver, asset value){
+
+     //if delegating in middle of round, send corresponding proportion from resevoir and powerup account immediately
+
+     asset powerup; 
+     asset ecpusupply;
+     asset resevoir;
+
+    
+     ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
+     resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
+         
+     powerup = (double(value.amount))/(double(ecpusupply.amount))*resevoir;
+
+     action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
+            std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
+         
+     
 }
 
 [[eosio::on_notify("eosio.token::transfer")]]
