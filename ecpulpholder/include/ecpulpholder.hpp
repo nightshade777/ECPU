@@ -85,12 +85,16 @@ namespace eosio {
          };
 
          struct [[eosio::table]] currency_stats {
+           
             asset    supply;
             asset    max_supply;
             name     issuer;
-            asset    staked;
-
+            int      prevmine;// var not used, utilized in order to pull from two different token contracts without requiring two structs
+            int      creationtime;
+            asset    totalstake;
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
+
+            
          };
 
          typedef eosio::multi_index< "accounts"_n, account > accounts;
