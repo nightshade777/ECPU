@@ -73,7 +73,7 @@ void token::retire( const asset& quantity, const string& memo )
     check( quantity.is_valid(), "invalid quantity" );
     check( quantity.amount > 0, "must retire positive quantity" );
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-
+/**
     asset sov = asset(1, symbol("SOV", 4));
     asset supply = get_supply( get_self(), quantity.symbol.code());
     asset balance = get_balance( name{"sovmintofeos"}, get_self(), sov.symbol.code());
@@ -94,7 +94,7 @@ void token::retire( const asset& quantity, const string& memo )
          std::make_tuple(get_self(), user, sov, std::string("XSOV withdraw to SOV"))).send();
 
     }
-   
+   **/
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;
     });
@@ -204,12 +204,36 @@ void token::close( const name& owner, const symbol& symbol )
    acnts.erase( it );
 }
 
-void instapowerup( const name& contract, name receiver, asset powerupamt ){
+void token::instapowerup( const name& contract, name receiver, asset powerupamt ){
 
    require_auth(contract);
    require_recipient(name{"cpupayouteos"});
 
 }
+
+
+void token::setproxy( const name& contract, name proxy, name sender){
+   
+   require_auth(get_self());
+   
+   proxies to_proxy( get_self(), get_self().value );
+   auto to = to_proxy.find( contract.value );
+   if( to == to_proxy.end() ) {
+      to_proxy.emplace( get_self(), [&]( auto& a ){
+        a.contract = contract;
+        a.proxy = proxy;
+        a.eossender = sender;
+      });
+   } else {
+      to_proxy.modify( to, get_self(), [&]( auto& a ) {
+        a.proxy = proxy;
+        a.eossender = sender;
+      });
+   }
+
+}
+
+
 
 [[eosio::on_notify("cpumintofeos::stake")]] 
 void token::setstake(name account, asset value, bool selfdelegate){
@@ -239,7 +263,7 @@ void token::setdelegate(name account, asset receiver, asset value){
 
      //if delegating in middle of round, send corresponding proportion from resevoir and powerup account immediately
 
-     asset powerup; 
+     asset powerup = asset(0, symbol("EOS", 4)); //nitiaize powerup with eos asset, change amount in next step
      asset ecpusupply;
      asset resevoir;
 
@@ -247,17 +271,24 @@ void token::setdelegate(name account, asset receiver, asset value){
      ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
      resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
          
-     powerup = (double(value.amount))/(double(ecpusupply.amount))*resevoir;
+     powerup.amount = (double(value.amount))/(double(ecpusupply.amount))/2ll;//get
+
+     resevoir = resevoir - powerup; //remove this powerup amout from resevoir
+
+     set_resevoir(resevoir);// update resevoir
 
      action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
             std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
-         
+      action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
+               std::make_tuple(get_self(), account, powerup)).send();
      
 }
 
 [[eosio::on_notify("eosio.token::transfer")]]
 void token::deposit(name from, name to, eosio::asset quantity, std::string memo){
 //three types of eos being received, mining income, voting income, and LP income
+
+name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
 
     if (to != get_self()){
         return;
@@ -276,8 +307,11 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
          //vote for reward BPS, place into rex
          //no further action
 
+         name proxy = get_proxy(name{"ecpulpholder"});
+         
+
           action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-          std::make_tuple(get_self(), name{"voteproxy122"}, name{""})).send();
+          std::make_tuple(get_self(), proxy, name{""})).send();
 
           action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
           std::make_tuple(get_self(), quantity)).send();
@@ -316,8 +350,9 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 **/
    }
 
+   
 
-   else{
+   else if(from == sender){
    //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
    asset liquidbal = get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
    
@@ -345,6 +380,8 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
     
 
    }
+
+   else{ return;}
    
 
 

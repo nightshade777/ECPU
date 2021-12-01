@@ -68,6 +68,28 @@
                 {
                     "name": "totalstake",
                     "type": "asset"
+                },
+                {
+                    "name": "resevoir",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "instapowerup",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract",
+                    "type": "name"
+                },
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "powerupamt",
+                    "type": "asset"
                 }
             ]
         },
@@ -108,6 +130,24 @@
             ]
         },
         {
+            "name": "proxy",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract",
+                    "type": "name"
+                },
+                {
+                    "name": "proxy",
+                    "type": "name"
+                },
+                {
+                    "name": "eossender",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "retire",
             "base": "",
             "fields": [
@@ -118,6 +158,24 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "setproxy",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract",
+                    "type": "name"
+                },
+                {
+                    "name": "proxy",
+                    "type": "name"
+                },
+                {
+                    "name": "sender",
+                    "type": "name"
                 }
             ]
         },
@@ -156,6 +214,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "instapowerup",
+            "type": "instapowerup",
+            "ricardian_contract": ""
+        },
+        {
             "name": "issue",
             "type": "issue",
             "ricardian_contract": ""
@@ -171,6 +234,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "setproxy",
+            "type": "setproxy",
+            "ricardian_contract": ""
+        },
+        {
             "name": "transfer",
             "type": "transfer",
             "ricardian_contract": ""
@@ -180,6 +248,13 @@
         {
             "name": "accounts",
             "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "proxytable",
+            "type": "proxy",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
