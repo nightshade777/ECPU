@@ -307,8 +307,6 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
          //vote for reward BPS, place into rex
          //no further action
 
-         
-         
 
           action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
           std::make_tuple(get_self(), proxy, name{""})).send();
@@ -381,7 +379,12 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
 
    }
 
-   else{ return;}
+   else{ 
+
+         check(1!=1,"memo not valid");
+   
+   
+   return;}
    
 
 

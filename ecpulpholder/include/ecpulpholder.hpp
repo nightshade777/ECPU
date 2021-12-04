@@ -74,7 +74,7 @@ namespace eosio {
                   statstable.modify( st, same_payer, [&]( auto& s ) {
                         s.resevoir += quantity;
                   });
-                  add_balance( st.issuer, quantity, st.issuer );
+                  
 
          }
 
