@@ -279,7 +279,7 @@ void token::setdelegate(name account, asset receiver, asset value){
 
      action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
             std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
-      action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
+     action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
             std::make_tuple(get_self(), account, powerup)).send();
      
 }
@@ -350,15 +350,15 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
 
    
 
-   else if(from == sender){//in the case of receiving voting rewards from the proxy's  reward sending account
+   else if(from == sender){//in the case of receiving voting rewards from the proxy's reward sending account
    //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
-   asset liquidbal = get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
+   asset resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
    
    action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
           std::make_tuple(get_self(), proxy, name{""})).send();
 
           action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-          std::make_tuple(get_self(), liquidbal)).send();
+          std::make_tuple(get_self(), resevoir)).send();
    
    //find total supply of ECPU 
    asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
@@ -370,12 +370,9 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
    check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
    check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
 
-   asset resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
+   resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
 
-
-
-   //add to daily powerup counter
-    
+   set_resevoir(resevoir);// update resevoir
 
    }
 

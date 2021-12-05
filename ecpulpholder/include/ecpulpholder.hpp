@@ -142,7 +142,7 @@ namespace eosio {
             int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
             int      creationtime;//see above
             asset    totalstake;//see above
-            asset    resevoir;//eos reserved for unstakers for 24 hours
+            asset    resevoir;//eos reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
             
          };
