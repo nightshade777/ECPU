@@ -55,6 +55,9 @@ namespace eosio {
          [[eosio::action]]
          void open2(name user);
 
+         [[eosio::action]]
+         void open3(name user, name recipient);
+
          
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
@@ -64,7 +67,7 @@ namespace eosio {
          void stake (name account, asset value, bool selfdelegate);
          
          [[eosio::action]]
-         void unstake (name account, asset value);
+         void unstake (name account, asset value, bool selfdelegate);
 
          [[eosio::action]]
          void delegate (name account, name receiver, asset value);
@@ -214,6 +217,17 @@ namespace eosio {
         });
 }
 
+   void updatedelegate(asset quantity){
+
+        auto sym = quantity.symbol;
+        stats statstable( get_self(), sym.code().raw() );
+        auto existing = statstable.find( sym.code().raw() );
+        const auto& st = *existing;
+        statstable.modify( st, same_payer, [&]( auto& s ) {
+            s.totaldelegate += quantity;
+        });
+}
+
 
       void mine(name from){
 
@@ -276,6 +290,8 @@ namespace eosio {
             int      prevmine;
             int      creationtime;
             asset    totalstake;
+            asset    totaldelegate;
+
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
@@ -284,6 +300,7 @@ namespace eosio {
             
             name     recipient;
             asset    cpupower;
+            int      delegatetime;
             
 
             uint64_t primary_key()const { return recipient.value; } 

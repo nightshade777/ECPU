@@ -22,7 +22,8 @@ void token::create( const name&   issuer,
        s.issuer        = issuer;
        s.creationtime  = now();
        s.prevmine = now();
-       s.totalstake = maximum_supply-maximum_supply;//initialize at zero
+       s.totalstake = maximum_supply-maximum_supply;//initialize asset to zero
+       s.totaldelegate = maximum_supply-maximum_supply;//initialize asset to zero
        
     });
 }
@@ -217,6 +218,32 @@ void token::open2(name user)
         
     }
 
+//simple version of open with only username and recipient as argument, user pays for ram
+void token::open3(name user, name recipient)
+{
+        require_auth(user);
+
+        asset cpu = asset(0, symbol("CPU", 4));
+       
+        auto sym = cpu.symbol.code();
+
+        auto sym_code_raw = sym.raw();
+
+        accounts acnts( get_self(), recipient.value );
+        auto it = acnts.find( sym_code_raw );
+        if( it == acnts.end() ) {
+            acnts.emplace( user, [&]( auto& a ){
+                a.balance = cpu;
+                a.storebalance = a.balance;
+                a.cpupower = a.balance;    
+                a.unstaking = a.balance;     
+                a.unstake_time = 0;
+            });
+        }
+
+        
+    }
+
 void token::close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
@@ -224,7 +251,7 @@ void token::close( const name& owner, const symbol& symbol )
    auto it = acnts.find( symbol.code().raw() );
    check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
    check( it->balance.amount == 0, "Cannot close because the balance is not zero." );
-   check(it->cpupower.amount == 0, "Cannot close because SVX power is not zero." );
+   check(it->cpupower.amount == 0, "Cannot close because ECPU power is not zero." );
    acnts.erase( it );
 }
 
@@ -281,11 +308,18 @@ void token::stake(name account, asset value, bool selfdelegate)
         });
 
         updatestake(value);//update global var for tracking stake
+
+        if (selfdelegate == true){
+
+            action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "delegate"_n, 
+                  std::make_tuple(account,value,value)).send();
+                  updatedelegate(value);
+        }
     
     }
   
   
-  void token::unstake(name account, asset value)
+  void token::unstake(name account, asset value, bool selfdelegate)
     {
 
       /**
@@ -339,6 +373,13 @@ void token::stake(name account, asset value, bool selfdelegate)
         });
 
         updatestake(-value);
+
+         if (selfdelegate == true){
+
+            action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "undelegate"_n, 
+                  std::make_tuple(account,value,value)).send();
+                  updatedelegate(-value);
+        }
     
     }
 
@@ -364,7 +405,10 @@ void token::stake(name account, asset value, bool selfdelegate)
   
   void token::delegate (name account, name receiver, asset value){
       require_auth(account);
-      check(receiver != account, "cannot delegate to self");
+
+      require_recipient(receiver);
+      require_recipient(name{"cpupayouteos"});
+      //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
       const auto& st = statstable.get( sym.raw() );
@@ -376,18 +420,26 @@ void token::stake(name account, asset value, bool selfdelegate)
       
       accounts from_acnts( _self, account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
-      check(to!=from_acnts.end(),"Lender must initialize ECPU balance RAM");
-   
+      //check(to!=from_acnts.end()-------- Delegator TO Pay RAM inside DELEGATE ACTIon
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
           check((value <= a.cpupower ), "Cannot delegate more than your cpupower");
           a.cpupower -= value;
         });
-      //add CPU power to borrower
+      //add CPU power from delegator to receiver/delegatee
       accounts to_acnts( _self, receiver.value );
       auto tor = to_acnts.find( value.symbol.code().raw() );
-      check(tor!= to_acnts.end(),"receiver must initialize CPU balance RAM");
-   
+
+      //if receiver/delegatee has never initialized ram balance of ECPU, the delegator will pay for RAM for ECPU balance
+      if( tor == to_acnts.end() ) {
+            to_acnts.emplace( account, [&]( auto& a ){
+                a.balance = value-value;
+                a.storebalance = a.balance;
+                a.cpupower = a.balance;    
+                a.unstaking = a.balance;     
+                a.unstake_time = 0;
+            });
+        }
       to_acnts.modify( tor, same_payer, [&]( auto& a ) 
         {
           a.cpupower += value;
@@ -403,19 +455,28 @@ void token::stake(name account, asset value, bool selfdelegate)
           delegatetable.emplace( account, [&]( auto& a ){
                 a.recipient = receiver;
                 a.cpupower = value;
+                a.delegatetime = now();
           });
       }
-      
+      //if delegatee/receiver already exists as a existing receiver for the delegator, add to existing balance
       else {
           delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 a.recipient = receiver;
                 a.cpupower = a.cpupower + value;
+                a.delegatetime = now();
           });
       }
+      
+      updatedelegate(value);
+      
+      
   }
   void token::undelegate (name account, name receiver, asset value){
+      
       require_auth(account);
-      check(receiver != account, "cannot undelegate to self");
+      require_recipient(receiver);
+      require_recipient(name{"cpupayouteos"});
+      //check(receiver != account, "cannot undelegate to self");
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
       const auto& st = statstable.get( sym.raw() );
@@ -429,6 +490,8 @@ void token::stake(name account, asset value, bool selfdelegate)
       auto tod = delegatetable.find(receiver.value);
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
           delegatetable.modify(tod, same_payer, [&]( auto& a ){
+                
+                check(a.delegatetime <= (now()+(60*60*24)),"must wait 24 hours to undelegate");
                 initialcpupower = a.cpupower;
                 a.cpupower = a.cpupower - value;
                 finalcpupower = a.cpupower;
@@ -455,7 +518,9 @@ void token::stake(name account, asset value, bool selfdelegate)
         {
           a.cpupower -= value;
         });
+    updatedelegate(-value);
      }
+     
 
 
 void minereceipt( name user){
