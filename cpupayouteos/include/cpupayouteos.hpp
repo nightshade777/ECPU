@@ -28,39 +28,34 @@ CONTRACT cpupayouteos : public contract {
     void modifylr(name user, int loadingratio);
 
     //listen to mining 
-    [[eosio::on_notify("sovdexrelays::minereceipt")]] void paydiv(name user, eosio::asset sovburned, asset minepool);
-
-    //listen to transfers to get paid out
-    [[eosio::on_notify("fakexautforu::transfer")]] void insertgold(name from, name to, asset quantity, std::string memo);
-    [[eosio::on_notify("btc.ptokens::transfer")]] void insertbtc(name from, name to, asset quantity, std::string memo);
-    [[eosio::on_notify("svxmintofeos::transfer")]] void insertsvx(name from, name to, asset quantity, std::string memo);
+    [[eosio::on_notify("cpumintofeos::minereceipt")]] void payreward(name user, asset minepool);
     
     //listen to stake / unstake
-    [[eosio::on_notify("svxmintofeos::stake")]] void setstake(name account, asset value);
-    [[eosio::on_notify("svxmintofeos::unstake")]] void setunstake(name account, asset value);
+    [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, asset value);
+    [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, asset value);
     
     
     
-    TABLE staketable { 
+    TABLE delegatee { 
       
       name      staker;
-      asset     svxstaked;
-      uint32_t  staketime;
+      asset     ecpustaked;
+      uint32_t  delegatetime;
       
       auto primary_key() const { return staker.value; }
     };
-    typedef multi_index<name("staketable"), staketable> stake_table;
+    typedef multi_index<name("delegatee"), delegatee> delegatees;
 
 
 
-    TABLE svxstakestat {
+    TABLE stakestat {
       name       contract;
-      asset      clubstaked;
+      asset      totalstaked;
      
       
       auto primary_key() const { return contract.value; }
     };
-    typedef multi_index<name("svxstakestat"), svxstakestat> svxstake_stat;
+    typedef multi_index<name("stakestat"), stakestat> stake_stat;
 
 
 
@@ -70,19 +65,11 @@ CONTRACT cpupayouteos : public contract {
       
       //asset      currenttoken; // current token being paid out 
       name       currentpayee;
-
-      asset      remainingpay_gold; // divs loaded in queue
-      asset      remainingpay_btc;
-      asset      remainingpay_svx;
-
-      asset      startpay_gold; // amount of divs at the start of the round, should be calc from LR*queue
-      asset      startpay_btc;
-      asset      startpay_svx;
-
+      int        lastpaytime;
+      asset      remainingpay_ecpu;
+      asset      startpay_ecpu;
       int        loadingratio; //determines the rate at which divs are loaded from the queue to the active round
-
-      asset      clubstakestart; //the amount of SVX staked in 777 club at the start of the active round
-      
+      asset      stakestart; //the amount of ecpu staked in 777 club at the start of the active round
       int        payoutstarttime; //the time of the start if the rounf 
       
       
@@ -99,7 +86,7 @@ CONTRACT cpupayouteos : public contract {
      struct [[eosio::table]] account {
             asset    balance;
             asset    storebalance;
-            asset    svxpower;
+            asset    cpupower;
             asset    unstaking;
             uint32_t  unstake_time;
             
@@ -227,80 +214,30 @@ CONTRACT cpupayouteos : public contract {
 
 //------------------ remaining pay getters --------------------------------------------------------//
 
-    asset get_remaining_pay_gold(){
+   
+    asset get_remaining_pay_ecpu(){
 
         asset rp; 
 
         queue_table queuetable(get_self(), get_self().value);
         auto existing = queuetable.find(get_self().value);
 
-        rp = existing->remainingpay_gold;
-
-        return rp;
-
-
-    }
-    asset get_remaining_pay_btc(){
-
-        asset rp; 
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-
-        rp = existing->remainingpay_btc;
-
-        return rp;
-
-
-    }
-    asset get_remaining_pay_svx(){
-
-        asset rp; 
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-
-        rp = existing->remainingpay_svx;
+        rp = existing->remainingpay_ecpu;
 
         return rp;
 
 
     }
 //----------------------------------------startingpay gettters --------------------------//
-    asset get_starting_pay_gold(){
+    
+    asset get_starting_pay_ecpu(){
 
         asset sp; 
 
         queue_table queuetable(get_self(), get_self().value);
         auto existing = queuetable.find(get_self().value);
 
-        sp = existing->startpay_gold;
-
-        return sp;
-
-
-    }
-    asset get_starting_pay_btc(){
-
-        asset sp; 
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-
-        sp = existing->startpay_btc;
-
-        return sp;
-
-
-    }
-    asset get_starting_pay_svx(){
-
-        asset sp; 
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-
-        sp = existing->startpay_svx;
+        sp = existing->startpay_ecpu;
 
         return sp;
 
@@ -346,7 +283,7 @@ CONTRACT cpupayouteos : public contract {
         stake_table staketable(get_self(), get_self().value);
         auto existing = staketable.find(user.value);
 
-        stake = existing->svxstaked;
+        stake = existing->ecpustaked;
 
         return stake;
 
@@ -390,26 +327,11 @@ CONTRACT cpupayouteos : public contract {
 
           return;
       }
-
-
-     if (sym == "PBTC"){
-        
-          action(permission_level{_self, "active"_n}, "btc.ptokens"_n, "transfer"_n, 
-          std::make_tuple(get_self(), user, quantity, std::string(memo))).send();
-        
-      }
-
-      if (sym == "XAUT"){
-        
-          action(permission_level{_self, "active"_n}, "fakexautforu"_n, "transfer"_n, 
-          std::make_tuple(get_self(), user, quantity, std::string(memo))).send();
-        
-      }
   
       
-     if (sym == "SVX"){
+     if (sym == "ECPU"){
         
-          action(permission_level{_self, "active"_n}, "svxmintofeos"_n, "transfer"_n, 
+          action(permission_level{_self, "active"_n}, "ecpumintofeos"_n, "transfer"_n, 
           std::make_tuple(get_self(), user, quantity, std::string(memo))).send();
 
     }
@@ -444,29 +366,14 @@ CONTRACT cpupayouteos : public contract {
         check( existing != queuetable.end(), "contract table not deployed" );
         const auto& st = *existing;
 
-        if (tokensym == "PBTC"){
+       
+
+
+        if (tokensym == "ECPU"){
 
 
                 queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.remainingpay_btc += quantity;
-                });
-
-        }
-
-        if (tokensym == "XAUT"){
-
-
-                queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.remainingpay_gold += quantity;
-                });
-
-        }
-
-        if (tokensym == "SVX"){
-
-
-                queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.remainingpay_svx += quantity;
+                    s.remainingpay_ecpu += quantity;
                 });
 
         }
@@ -477,43 +384,28 @@ CONTRACT cpupayouteos : public contract {
 
   void update_global_stake(name user, asset stakechange){
 
-   //1 case one, didnt have 777k, staked and still doesnt have 777k - edit nothing 
-   //2 case two, had 777k, staked and now has even more - modify global, modify club table
-   //3 case three didnt have 777k, but now has 777k - modify global stake, emplace club stake table
-
    
-   //4 case four, person with 777k already staked who wasnt on list, stakes more
+    //1 find ecpu stored
 
-   //snapshot 1, internal stake club table (status and stake before the change) 
-   //snapshot 2 svx storedbalance table (real current stake value)
-   
-   
-    //1 find svx stored
+    asset stored = get_stored_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
-    asset stored = get_stored_balance(name{"svxmintofeos"}, user, symbol_code("SVX") );
-
-    if (stored.amount/10000 < (777000)){  //CASE1 CONSIDERED: NOW DOESNT HAVE 777K STAKED
-        
-        return;
-
-    }
 
     stake_table staketable(get_self(), get_self().value);
     auto existing = staketable.find(user.value);
     const auto& st = *existing;
 
 
-    svxstake_stat globalstake(get_self(),get_self().value);
+    stake_stat globalstake(get_self(),get_self().value);
     auto existing2 = globalstake.find(get_self().value);
     const auto& st2 = *existing2;
 
 
-    if (existing == staketable.end()){ //CASE 3 CONSIDERED: DIDNT HAVE 777K STAKED BUT NOW DOES
+    if (existing == staketable.end()){ //CASE 3 CONSIDERED: DIDNT HAVE STAKED BUT NOW DOES
 
         staketable.emplace( get_self(), [&]( auto& s ) {
 
                         s.staker = user;
-                        s.svxstaked = stored;
+                        s.ecpustaked = stored;
                         s.staketime = current_time_point().sec_since_epoch();
 
                   });
@@ -525,11 +417,11 @@ CONTRACT cpupayouteos : public contract {
     
     }
 
-    else { //CASE3 CONSIDERED: HAS 777K STAKED, STAKED EVEN MORE
+    else { //already STAKED, STAKED EVEN MORE
 
         staketable.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.svxstaked = s.svxstaked + stakechange;
+                        s.ecpustaked = s.ecpustaked + stakechange;
                         s.staketime = current_time_point().sec_since_epoch();
 
                   });
@@ -553,7 +445,7 @@ CONTRACT cpupayouteos : public contract {
     //CASE 2 person with 777k unstakes and still has > 777k -> modify stake club entry, modify global stake
     //CASE 3 person with 777k unstakes and no longer has 777k ->delete stake club entry, modify global stake
     //snapshot 1, internal stake club table (status and stake before the change) 
-    //snapshot 2 svx storedbalance table (real current stake value)
+    //snapshot 2 ecpu storedbalance table (real current stake value)
 
    
     //4 case four, person with 777k already staked who wasnt on list, unstakes some
@@ -564,7 +456,7 @@ CONTRACT cpupayouteos : public contract {
     auto existing = staketable.find(user.value);
     const auto& st = *existing;
 
-    svxstake_stat globalstake(get_self(),get_self().value);
+    stake_stat globalstake(get_self(),get_self().value);
     auto existing2 = globalstake.find(get_self().value);
     const auto& st2 = *existing2;
 
@@ -599,7 +491,7 @@ CONTRACT cpupayouteos : public contract {
 
     }
 
-    asset stored = get_stored_balance(name{"svxmintofeos"}, user, symbol_code("SVX") );
+    asset stored = get_stored_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
     if (stored.amount/10000 < (777000)){
         
@@ -617,7 +509,7 @@ CONTRACT cpupayouteos : public contract {
 
         staketable.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.svxstaked = s.svxstaked - stakechange;
+                        s.ecpustaked = s.ecpustaked - stakechange;
                         s.staketime = current_time_point().sec_since_epoch();
                     });
 
@@ -639,19 +531,19 @@ CONTRACT cpupayouteos : public contract {
   asset get_current_club_stake(){
 
         /**
-        svxstake_stat globalstake(get_self(),get_self().value);
+        ecpustake_stat globalstake(get_self(),get_self().value);
         auto existing2 = globalstake.find(get_self().value);
         asset ccs = existing2->clubstaked;
         return ccs;
         **/
         
-        asset ccs = asset(0, symbol("SVX", 4));
+        asset ccs = asset(0, symbol("ecpu", 4));
         
         
         stake_table staketable(get_self(), get_self().value);
         for (auto it = staketable.begin(); it != staketable.end(); it++){
 
-            ccs = ccs + (it->svxstaked);
+            ccs = ccs + (it->ecpustaked);
 
         }
 
@@ -678,26 +570,9 @@ CONTRACT cpupayouteos : public contract {
 
   }
 
-  void set_gold_rpsp(){
-
-        
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-        check( existing != queuetable.end(), "contract table not deployed" );
-        const auto& st = *existing;
 
 
-        int lr = get_loading_ratio();
-        asset sp = lr*get_remaining_pay_gold()/1000;
-
-                queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.startpay_gold = sp;
-                    s.remainingpay_gold = s.remainingpay_gold - s.startpay_gold;
-                });
-
-}
-
-  void set_svx_rpsp(){
+  void set_ecpu_rpsp(){
 
         queue_table queuetable(get_self(), get_self().value);
         auto existing = queuetable.find(get_self().value);
@@ -706,32 +581,15 @@ CONTRACT cpupayouteos : public contract {
 
 
         int lr = get_loading_ratio();
-        asset sp = lr*get_remaining_pay_svx()/1000;
+        asset sp = lr*get_remaining_pay_ecpu()/1000;
 
                 queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.startpay_svx = sp;
-                    s.remainingpay_svx = s.remainingpay_svx - s.startpay_svx;
+                    s.startpay_ecpu = sp;
+                    s.remainingpay_ecpu = s.remainingpay_ecpu - s.startpay_ecpu;
                 });
 
   }
 
-  void set_btc_rpsp(){
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-        check( existing != queuetable.end(), "contract table not deployed" );
-        const auto& st = *existing;
-
-
-        int lr = get_loading_ratio();
-        asset sp = lr*get_remaining_pay_btc()/1000;
-
-                queuetable.modify( st, same_payer, [&]( auto& s ) {
-                    s.startpay_btc = sp;
-                    s.remainingpay_btc = s.remainingpay_btc - s.startpay_btc;
-                });
-
-  }
 
 void set_next_round(){
 
@@ -758,9 +616,9 @@ void set_next_round(){
         //c: new round required, new round code here and below:
 
         //e: 
-        set_btc_rpsp();
-        set_svx_rpsp();
-        set_gold_rpsp();
+      
+        set_ecpu_rpsp();
+     
 
         //f&g: 
         set_start_stake();
@@ -771,27 +629,6 @@ void set_next_round(){
 }
 
 
-bool check_pbtc_balance(name miner ){
-            
-            
-            asset assetname = asset(0, symbol("PBTC", 8));
-
-            
-            auto sym_code = assetname.symbol.code();
-
-            accountsg accountstable( name{"btc.ptokens"}, miner.value );
-            
-            auto existing = accountstable.find(sym_code.raw());
-            
-            if (existing == accountstable.end()){
-
-                return false;
-
-            }
-            //check(existing != accountstable.end(),"Must have a balance for this asset before buying. Please use open action to initialize ram");
-            
-            return true;
-         }
 
  
 
