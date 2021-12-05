@@ -491,7 +491,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
           delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 
-                check(a.delegatetime <= (now()+(60*60*24)),"must wait 24 hours to undelegate");
+                check((a.delegatetime+(60*60*12)) <= now(),"must wait 12 hours to undelegate");
                 initialcpupower = a.cpupower;
                 a.cpupower = a.cpupower - value;
                 finalcpupower = a.cpupower;
