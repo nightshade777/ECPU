@@ -61,7 +61,7 @@ namespace eosio {
          [[eosio::on_notify("cpumintofeos::delegate")]] 
          void setdelegate(name account, asset receiver, asset value);
 
-         void set_resevoir( const asset& quantity){ //update resevoir in stat tab;e
+         void set_resevoir( const asset& quantity){ //update resevoir in stat table
 
                   auto sym = asset(0, symbol("ECPU", 4)).symbol;
                   stats statstable( get_self(), sym.code().raw() );
@@ -72,7 +72,7 @@ namespace eosio {
                   check( quantity.is_valid(), "invalid quantity" );
                   check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
                   statstable.modify( st, same_payer, [&]( auto& s ) {
-                        s.resevoir += quantity;
+                        s.resevoir = quantity;
                   });
                   
 

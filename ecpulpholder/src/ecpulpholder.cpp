@@ -22,7 +22,7 @@ void token::create( const name&   issuer,
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
-       s.totalstake    = maximum_supply-maximum_supply; //initialize to token contract asset to zero (unused)
+       s.totalstake    = asset(0, symbol("CPULP", 4)); //initialize to token contract asset to zero (unused)
        s.resevoir      = asset(0, symbol("EOS", 4)); //initialize with EOS asset to zero
     });
 }
@@ -261,9 +261,9 @@ void token::setstake(name account, asset value, bool selfdelegate){
 [[eosio::on_notify("cpumintofeos::delegate")]] 
 void token::setdelegate(name account, asset receiver, asset value){
 
-     //if delegating in middle of round, send corresponding proportion from resevoir and powerup account immediately
+     //if delegating in middle of round, send corresponding proportion from liquid resevoir and powerup account immediately
 
-     asset powerup = asset(0, symbol("EOS", 4)); //nitiaize powerup with eos asset, change amount in next step
+     asset powerup = asset(0, symbol("EOS", 4)); //initiaize powerup with eos asset, change amount in next step
      asset ecpusupply;
      asset resevoir;
 
@@ -287,18 +287,18 @@ void token::setdelegate(name account, asset receiver, asset value){
 [[eosio::on_notify("eosio.token::transfer")]]
 void token::deposit(name from, name to, eosio::asset quantity, std::string memo){
 //three types of eos being received, mining income, voting income, and LP income
-name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
-name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
+   name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
+   name proxy_sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
 
-    if (to != get_self()){
+   if (to != get_self()){
         return;
-    }
+   }
 
-    if (from == get_self()){
+   if (from == get_self()){
         return;
-    }
+   }
 
-    if (memo == "refill"){
+   if (memo == "refill"){
         return;
    }
    
@@ -306,8 +306,6 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
 
          //vote for reward BPS, place into rex
          //no further action
-
-
           action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
           std::make_tuple(get_self(), proxy, name{""})).send();
 
@@ -350,37 +348,31 @@ name sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-
 
    
 
-   else if(from == sender){//in the case of receiving voting rewards from the proxy's reward sending account
+   else if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
    //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
-   asset resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
+         asset resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
    
-   action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-          std::make_tuple(get_self(), proxy, name{""})).send();
+         action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+               std::make_tuple(get_self(), proxy, name{""})).send();
 
-          action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-          std::make_tuple(get_self(), resevoir)).send();
+         action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+               std::make_tuple(get_self(), resevoir)).send();
    
-   //find total supply of ECPU 
-   asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
-   //find total stake of ECPU
-   asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
    // send stake/supply* received to iteration contract
-   asset powerup = quantity; //initialization 
-   powerup = (double(ecpustake.amount))/(double(ecpusupply.amount))*quantity; //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
-   check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
-   check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
-
-   resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
-
-   set_resevoir(resevoir);// update resevoir
-
+         asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code()); //find total supply of ECPU 
+         asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//find total stake of ECPU
+         asset powerup = quantity; //initialization 
+         powerup = (double(ecpustake.amount))/(double(ecpusupply.amount))*quantity; //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
+         check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
+         check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
+         resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
+         set_resevoir(resevoir);// update resevoir
    }
-
    else{ 
 
          check(1!=1,"memo not valid");
    
-   
+
    return;}
    
 
