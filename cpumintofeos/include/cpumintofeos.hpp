@@ -231,23 +231,23 @@ namespace eosio {
 
       void mine(name from){
 
-        int elapsedpm = now() - get_prevmine(get_self(), symbol_code("CPU"));
-        asset balance = get_balance(get_self(),get_self(), symbol_code("CPU"));
+        int elapsedpm = now() - get_prevmine(get_self(), symbol_code("ECPU"));
+        asset balance = get_balance(get_self(),get_self(), symbol_code("ECPU"));
 
     
         if (elapsedpm > 0){
       
-            asset supply = get_supply(get_self(), symbol_code("CPU"));
+            asset supply = get_supply(get_self(), symbol_code("ECPU"));
             asset issuerate = get_issue_rate(supply);
             asset issue = issuerate*elapsedpm;
 
             action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "issue"_n, 
-            std::make_tuple(get_self(), issue, std::string("issue new CPU rewards"))).send();
+            std::make_tuple(get_self(), issue, std::string("issue new ECPU rewards"))).send();
 
             balance = balance + issue;
 
-            stats statstable( get_self(), symbol_code("CPU").raw() );
-            auto existing = statstable.find( symbol_code("CPU").raw() );
+            stats statstable( get_self(), symbol_code("ECPU").raw() );
+            auto existing = statstable.find( symbol_code("ECPU").raw() );
             check( existing != statstable.end(), "token with symbol does not exist" );
             const auto& st = *existing;
 
@@ -256,7 +256,7 @@ namespace eosio {
             });
 
           }
-            std::string minemessage = "CPU mining Reward";
+            std::string minemessage = "ECPU mining Reward";
 
             balance = balance/10000;
       
@@ -310,7 +310,7 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "delegates"_n, delegatecpu > delegates;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
-         typedef eosio::multi_index< "stat"_n, currency_stats > statsov;
+        // typedef eosio::multi_index< "stat"_n, currency_stats > statsov;
 
 
          void sub_balance( const name& owner, const asset& value );

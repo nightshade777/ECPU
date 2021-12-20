@@ -22,8 +22,8 @@ void token::create( const name&   issuer,
        s.issuer        = issuer;
        s.creationtime  = now();
        s.prevmine = now();
-       s.totalstake = maximum_supply-maximum_supply;//initialize asset to zero
-       s.totaldelegate = maximum_supply-maximum_supply;//initialize asset to zero
+       s.totalstake =  asset(0, symbol("ECPU", 4));//initialize asset to zero
+       s.totaldelegate =  asset(0, symbol("ECPU", 4));//initialize asset to zero
        
     });
 }
@@ -197,7 +197,7 @@ void token::open2(name user)
 {
         require_auth(user);
 
-        asset cpu = asset(0, symbol("CPU", 4));
+        asset cpu = asset(0, symbol("ECPU", 4));
        
         auto sym = cpu.symbol.code();
 
@@ -313,7 +313,6 @@ void token::stake(name account, asset value, bool selfdelegate)
 
             action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "delegate"_n, 
                   std::make_tuple(account,value,value)).send();
-                  updatedelegate(value);
         }
     
     }
@@ -330,6 +329,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       require_auth(account);
       require_recipient(account);
       require_recipient(name{"cpumintofeos"});
+      require_recipient(name{"cpupayouteos"});
     
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
@@ -541,7 +541,7 @@ void minereceipt( name user){
    action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
       std::make_tuple(from)).send();
 
-   check(quantity.amount == 1, "Transfer amount to mine must be equal to 0.0001 EOS");
+   check(quantity.amount == 100, "Transfer amount to mine must be equal to 0.01 EOS");
    
    mine(from);
   
