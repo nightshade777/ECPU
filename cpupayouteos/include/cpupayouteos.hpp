@@ -20,7 +20,7 @@ CONTRACT cpupayouteos : public contract {
     void resetround(name contract);
 
     [[eosio::action]] 
-    void intstaker(name user);
+    void intdelegatee(name user);
 
     //modify loading ratio
 
@@ -28,21 +28,23 @@ CONTRACT cpupayouteos : public contract {
     void modifylr(name user, int loadingratio);
 
     //listen to mining 
-    [[eosio::on_notify("cpumintofeos::minereceipt")]] void payreward(name user, asset minepool);
+    [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupowerup(name user);
     
     //listen to stake / unstake
     [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, asset value);
     [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, asset value);
     
-    
+    [[eosio::on_notify("ecpulpholder::instapowerup")]] void instapowerup( const name& contract, name receiver, asset powerupamt );
     
     TABLE delegatee { 
       
-      name      staker;
+      name      delegatee;
       asset     ecpustaked;
       uint32_t  delegatetime;
+      uint32_t  lastpaytime;
+
       
-      auto primary_key() const { return staker.value; }
+      auto primary_key() const { return delegatee.value; }
     };
     typedef multi_index<name("delegatee"), delegatee> delegatees;
 
@@ -62,14 +64,12 @@ CONTRACT cpupayouteos : public contract {
     TABLE queuetable { 
       
       name       contract;
-      
-      //asset      currenttoken; // current token being paid out 
       name       currentpayee;
       int        lastpaytime;
       asset      remainingpay_ecpu;
       asset      startpay_ecpu;
       int        loadingratio; //determines the rate at which divs are loaded from the queue to the active round
-      asset      stakestart; //the amount of ecpu staked in 777 club at the start of the active round
+      asset      stakestart; //the amount of ecpu staked at start of the active round
       int        payoutstarttime; //the time of the start if the rounf 
       
       
@@ -97,12 +97,7 @@ CONTRACT cpupayouteos : public contract {
         typedef eosio::multi_index< "accounts"_n, account > accounts;
 
         
-        static asset get_stored_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
-         {
-            accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw() );
-            return ac.storebalance;
-        }
+        
 
 
 
@@ -116,9 +111,20 @@ CONTRACT cpupayouteos : public contract {
   
         typedef eosio::multi_index< "accounts"_n, accountg > accountsg;
 
-//----------------------------------------------------------------------------------------------------------------
+        struct [[eosio::table]] currency_stats {
+            asset    supply;
+            asset    max_supply;
+            name     issuer;
+            int      prevmine;
+            int      creationtime;
+            asset    totalstake;
+            asset    totaldelegate;
 
-    name get_current_payee(){
+            uint64_t primary_key()const { return supply.symbol.code().raw(); }
+         };
+
+
+ name get_current_payee(){
 
         name payee; 
 
@@ -131,6 +137,70 @@ CONTRACT cpupayouteos : public contract {
 
     }
 
+    long double get_paying_ratio(){
+
+        name user = get_current_payee();
+        asset stake = get_userstake(user);
+        asset ss = get_stake_start();
+
+
+       long double payout_frac = ((double(stake.amount*1000)) / (double(ss.amount)));
+
+       //check((payout_frac > 0), "error payout fraction is zero");
+
+        return payout_frac;
+    }
+
+
+
+//get cpu power delegated to a user
+        static asset get_cpu_del_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         {
+            accounts accountstable( token_contract_account, owner.value );
+            const auto& ac = accountstable.get( sym_code.raw() );
+            return ac.cpupower;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//----------------------------------------------------------------------------------------------------------------
+
+
     name get_next_payee(){
 
         name nextpayee;
@@ -139,25 +209,25 @@ CONTRACT cpupayouteos : public contract {
 
         
 
-        stake_table staketable(get_self(), get_self().value);
-        auto existing = staketable.find(current_payee.value);
+        delegatees delegatee(get_self(), get_self().value);
+        auto existing = delegatee.find(current_payee.value);
 
         
-        if (existing == staketable.end()){
+        if (existing == delegatee.end()){
 
-                existing = staketable.begin();
-                return existing->staker;
+                existing = delegatee.begin();
+                return existing->delegatee;
         }
 
 
         existing++;
 
-        if (existing == staketable.end()){
+        if (existing == delegatee.end()){
 
-            existing = staketable.begin();
+            existing = delegatee.begin();
         }
 
-        nextpayee = existing->staker;
+        nextpayee = existing->delegatee;
 
         
 
@@ -191,11 +261,11 @@ CONTRACT cpupayouteos : public contract {
         
         name current_payee = get_current_payee();
 
-        stake_table staketable(get_self(), get_self().value);
-        auto existing = staketable.find(current_payee.value);
+        delegatees delegatee(get_self(), get_self().value);
+        auto existing = delegatee.find(current_payee.value);
         existing++;
 
-        if (existing == staketable.end()){
+        if (existing == delegatee.end()){
 
             return true;
         }
@@ -244,16 +314,16 @@ CONTRACT cpupayouteos : public contract {
 //-------------------------------------------------------------------------------------------------------------
     }
 
-    asset get_club_stake_start(){
+    asset get_stake_start(){
 
-        asset css; 
+        asset stakestart; 
 
         queue_table queuetable(get_self(), get_self().value);
         auto existing = queuetable.find(get_self().value);
 
-        css = existing->clubstakestart;
+        stakestart = existing->stakestart;
 
-        return css;
+        return stakestart;
 
 
     }
@@ -280,8 +350,8 @@ CONTRACT cpupayouteos : public contract {
 
         asset stake;
 
-        stake_table staketable(get_self(), get_self().value);
-        auto existing = staketable.find(user.value);
+        delegatees delegatee(get_self(), get_self().value);
+        auto existing = delegatee.find(user.value);
 
         stake = existing->ecpustaked;
 
@@ -290,32 +360,20 @@ CONTRACT cpupayouteos : public contract {
     }
 
 
-    uint32_t get_userstaketime(name user){
+    uint32_t get_user_delegatetime(name user){
 
-        uint32_t staketime;
+        uint32_t delegatetime;
 
-        stake_table staketable(get_self(), get_self().value);
-        auto existing = staketable.find(user.value);
+        delegatees delegatee(get_self(), get_self().value);
+        auto existing = delegatee.find(user.value);
 
-        staketime = existing->staketime;
+        delegatetime = existing->delegatetime;
 
-        return staketime;
+        return delegatetime;
 
     }
 
-    long double get_paying_ratio(){
-
-        name user = get_current_payee();
-        asset stake = get_userstake(user);
-        asset css = get_club_stake_start();
-
-
-       long double payout_frac = ((double(stake.amount*1000)) / (double(css.amount)));
-
-       //check((payout_frac > 0), "error payout fraction is zero");
-
-        return payout_frac;
-    }
+    
 
 
     void sendasset(name user, asset quantity, const std::string& memo){
@@ -331,7 +389,7 @@ CONTRACT cpupayouteos : public contract {
       
      if (sym == "ECPU"){
         
-          action(permission_level{_self, "active"_n}, "ecpumintofeos"_n, "transfer"_n, 
+          action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "transfer"_n, 
           std::make_tuple(get_self(), user, quantity, std::string(memo))).send();
 
     }
@@ -387,11 +445,11 @@ CONTRACT cpupayouteos : public contract {
    
     //1 find ecpu stored
 
-    asset stored = get_stored_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
+    asset cpudelegated = get_userstake(user);
 
 
-    stake_table staketable(get_self(), get_self().value);
-    auto existing = staketable.find(user.value);
+    delegatees delegatee(get_self(), get_self().value);
+    auto existing = delegatee.find(user.value);
     const auto& st = *existing;
 
 
@@ -400,18 +458,18 @@ CONTRACT cpupayouteos : public contract {
     const auto& st2 = *existing2;
 
 
-    if (existing == staketable.end()){ //CASE 3 CONSIDERED: DIDNT HAVE STAKED BUT NOW DOES
+    if (existing == delegatee.end()){ //CASE 3 CONSIDERED: DIDNT HAVE STAKED BUT NOW DOES
 
-        staketable.emplace( get_self(), [&]( auto& s ) {
+        delegatee.emplace( get_self(), [&]( auto& s ) {
 
-                        s.staker = user;
-                        s.ecpustaked = stored;
-                        s.staketime = current_time_point().sec_since_epoch();
+                        s.delegatee = user;
+                        s.ecpustaked = cpudelegated;
+                        s.delegatetime = current_time_point().sec_since_epoch();
 
                   });
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.clubstaked = get_current_club_stake();
+                        s.totalstaked = get_current_stake();
 
                   });
     
@@ -419,15 +477,15 @@ CONTRACT cpupayouteos : public contract {
 
     else { //already STAKED, STAKED EVEN MORE
 
-        staketable.modify( st, same_payer, [&]( auto& s ) {
+        delegatee.modify( st, same_payer, [&]( auto& s ) {
 
                         s.ecpustaked = s.ecpustaked + stakechange;
-                        s.staketime = current_time_point().sec_since_epoch();
+                        s.delegatetime = current_time_point().sec_since_epoch();
 
                   });
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.clubstaked = get_current_club_stake();
+                        s.totalstaked = get_current_stake();
 
                   });
 
@@ -452,8 +510,8 @@ CONTRACT cpupayouteos : public contract {
 
 
 
-    stake_table staketable(get_self(), get_self().value);
-    auto existing = staketable.find(user.value);
+    delegatees delegatee(get_self(), get_self().value);
+    auto existing = delegatee.find(user.value);
     const auto& st = *existing;
 
     stake_stat globalstake(get_self(),get_self().value);
@@ -470,7 +528,7 @@ CONTRACT cpupayouteos : public contract {
     if (existing3->currentpayee == user){
 
             existing++;
-            nextpayer = existing->staker;
+            nextpayer = existing->delegatee;
             queuetable.modify( st3, same_payer, [&]( auto& s ) {
 
                         s.currentpayee = nextpayer;
@@ -485,21 +543,21 @@ CONTRACT cpupayouteos : public contract {
 
 
 
-    if (existing == staketable.end()){
+    if (existing == delegatee.end()){
 
         return; //CASE 1 ADDRESSED HERE
 
     }
 
-    asset stored = get_stored_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
+    asset ecpustaked = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
-    if (stored.amount/10000 < (777000)){
+    if (ecpustaked.amount/10000 < (777000)){
         
-        staketable.erase(existing);
+        delegatee.erase(existing);
         
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.clubstaked = get_current_club_stake();
+                        s.totalstaked = get_current_stake();
 
                   });
         
@@ -507,15 +565,15 @@ CONTRACT cpupayouteos : public contract {
 
     else{
 
-        staketable.modify( st, same_payer, [&]( auto& s ) {
+        delegatee.modify( st, same_payer, [&]( auto& s ) {
 
                         s.ecpustaked = s.ecpustaked - stakechange;
-                        s.staketime = current_time_point().sec_since_epoch();
+                        s.delegatetime = current_time_point().sec_since_epoch();
                     });
 
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.clubstaked = get_current_club_stake();
+                        s.totalstaked = get_current_stake();
 
                   });
 
@@ -528,7 +586,7 @@ CONTRACT cpupayouteos : public contract {
 
   }
 
-  asset get_current_club_stake(){
+  asset get_current_stake(){
 
         /**
         ecpustake_stat globalstake(get_self(),get_self().value);
@@ -540,8 +598,8 @@ CONTRACT cpupayouteos : public contract {
         asset ccs = asset(0, symbol("ecpu", 4));
         
         
-        stake_table staketable(get_self(), get_self().value);
-        for (auto it = staketable.begin(); it != staketable.end(); it++){
+        delegatees delegatee(get_self(), get_self().value);
+        for (auto it = delegatee.begin(); it != delegatee.end(); it++){
 
             ccs = ccs + (it->ecpustaked);
 
@@ -562,7 +620,7 @@ CONTRACT cpupayouteos : public contract {
 
         queuetable.modify( st, same_payer, [&]( auto& s ) {
                     
-                    s.clubstakestart = get_current_club_stake();
+                    s.stakestart = get_current_stake();
                     s.payoutstarttime = current_time_point().sec_since_epoch();
                 
                 });

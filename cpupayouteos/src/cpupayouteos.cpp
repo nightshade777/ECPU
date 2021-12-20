@@ -12,15 +12,10 @@ void cpupayouteos::initialize(name contract, asset totalstaked){
       queuetable.emplace( get_self(), [&]( auto& s ) {
       
             s.contract = name{"cpupayouteos"};
-     
             s.currentpayee = name{"therealgavin"};
-
-            
-            s.remainingpay_ecpu = asset(0, symbol("ECPU", 4)); 
-            s.startpay_ecpu = asset(0, symbol("ECPU", 4));
-
-            s.loadingratio = 1; 
-            s.clubstakestart = totalstaked; 
+            s.remainingpay_ecpu = asset(0, symbol("EOS", 4)); 
+            s.startpay_ecpu = asset(0, symbol("EOS", 4));
+            s.stakestart = totalstaked; 
             s.payoutstarttime = current_time_point().sec_since_epoch();
                   
       });
@@ -44,9 +39,9 @@ void cpupayouteos::resetround(name contract){
 
      
 
-      stake_table staketable(get_self(), get_self().value);
-      auto existing2 = staketable.begin();
-      name firstpayee =  existing2->staker;
+      delegatees delegatee(get_self(), get_self().value);
+      auto existing2 = delegatee.begin();
+      name firstpayee =  existing2->delegatee;
 
       
 
@@ -58,7 +53,7 @@ void cpupayouteos::resetround(name contract){
       queuetable.modify( st, same_payer, [&]( auto& s ) {
                    
             s.currentpayee = firstpayee;
-            s.clubstakestart = get_current_club_stake(); 
+            s.stakestart = get_current_stake(); 
             s.payoutstarttime = current_time_point().sec_since_epoch();
 
       });
@@ -68,17 +63,17 @@ void cpupayouteos::resetround(name contract){
 }
 
 [[eosio::action]] 
-void cpupayouteos::intstaker(name user){
+void cpupayouteos::intdelegatee(name user){
 
       require_auth(get_self());
 
       
-      asset stored = get_stored_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
+      asset staked = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
 
 
-      stake_table staketable(get_self(), get_self().value);
-      auto existing = staketable.find(user.value);
+      delegatees delegatee(get_self(), get_self().value);
+      auto existing = delegatee.find(user.value);
       const auto& st = *existing;
 
 
@@ -86,25 +81,25 @@ void cpupayouteos::intstaker(name user){
       
       
 
-      if (existing == staketable.end()){
+      if (existing == delegatee.end()){
 
       
-                  staketable.emplace( get_self(), [&]( auto& s ) {
+                  delegatee.emplace( get_self(), [&]( auto& s ) {
 
-                        s.staker = user;
-                        s.ecpustaked = stored;
-                        s.staketime = current_time_point().sec_since_epoch();
+                        s.delegatee = user;
+                        s.ecpustaked = staked;
+                        s.delegatetime = current_time_point().sec_since_epoch();
 
                   });
       }
 
       else {
 
-                  staketable.modify( st, same_payer, [&]( auto& s ) {
+                  delegatee.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.staker = user;
-                        s.ecpustaked = stored;
-                        s.staketime = current_time_point().sec_since_epoch();
+                        s.delegatee = user;
+                        s.ecpustaked = staked;
+                        s.delegatetime = current_time_point().sec_since_epoch();
 
                   });
 
@@ -119,7 +114,7 @@ void cpupayouteos::intstaker(name user){
 
       globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totalstaked = get_current_club_stake(); 
+                        s.totalstaked = get_current_stake(); 
 
                   });
 
@@ -151,38 +146,29 @@ void cpupayouteos::modifylr(name user, int loadingratio){
 }
 
 
- [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::payreward(name user, asset minepool){
+ [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::cpupowerup(name user){
 
     
 
     //1 get current payee
     name payee = get_current_payee();
     //2 see if payee stake time is after start of payout round
-    uint32_t userstaketime = get_userstaketime(payee);
-    uint32_t roundstarttime = get_payout_start_time();
-
-    if (userstaketime > roundstarttime){
-      
+    uint32_t userdelegatetime = get_user_delegatetime(payee);
+    
+    //has 12 hours past, if not go to next payee and end action
+    if (userdelegatetime < current_time_point().sec_since_epoch(); + 60*60*12){
          set_next_round();
          return;
-
-      }
+     }
     
+     long double payratio = get_paying_ratio();
 
     
     //3 find current payout amount with payout fraction for user
 
-   
-    
-    long double payratio = get_paying_ratio();
-
-
-
-      
-      
     asset startpay_ecpu = get_starting_pay_ecpu();
-    asset divpayment_ecpu = startpay_ecpu;
-    divpayment_ecpu.amount = double(payratio*startpay_ecpu.amount)/1000;
+    asset divpayment_ecpu = asset(0, symbol("EOS", 4)); //initialization
+    divpayment_ecpu.amount = double(payratio*startpay_ecpu.amount)/100;
     
     
     sendasset(payee, divpayment_ecpu, "ECPU Payout stake payout");
@@ -202,8 +188,6 @@ void cpupayouteos::modifylr(name user, int loadingratio){
 
 
 }
-
-
 [[eosio::on_notify("cpumintofeos::undelegate")]] void cpupayouteos::setundelgate(name account, asset value){
 
       update_global_unstake(account, value);
