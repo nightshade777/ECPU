@@ -15,5 +15,5 @@ Contract Division of Functions:
 
 **cpupayouteos**: handles powerup distribution, receives mining notifications from cpumintofeos to iterate through delegatee list and distrubute powerups, all eos sent to this contract will be distributed as powerups to the delegatee list
 
-**powerupcalc1**: receives eos and an account name in the memo, purchases powerup for that account with approximtely 99.9% to CPU and 0.1% t NET
+**powerupcalc1**: receives eos and an account name in the memo, purchases powerup for that account with approximtely 99.9% to CPU and 0.1% to NET
 
