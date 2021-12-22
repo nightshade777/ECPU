@@ -52,6 +52,9 @@ namespace eosio {
          [[eosio::action]]
          void setproxy( const name& contract, name proxy, name sender);
 
+         [[eosio::action]]
+         void setpool(asset resevoir, asset rex_queue, asset eospool);
+
          [[eosio::on_notify("eosio.token::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
 
@@ -75,18 +78,17 @@ namespace eosio {
                         s.resevoir = quantity;
                   });
                   
-
          }
 
-         name get_proxy(name contract){// get name of proxy from table to vote for
+         name get_proxy(name contract)
+         {// get name of proxy from table to vote for
                    proxies to_proxy( get_self(), get_self().value );
                    const auto& to = to_proxy.get( contract.value );
                    return to.proxy;
 
          }
-
-
-         name get_eossender(name contract){//get name of contract that sends voting rewards
+         name get_eossender(name contract)
+         {//get name of contract that sends voting rewards
                    proxies to_proxy( get_self(), get_self().value );
                    const auto& to = to_proxy.get( contract.value );
                    return to.eossender;
@@ -113,11 +115,29 @@ namespace eosio {
             return st.totalstake;
          }
 
-         static asset get_resevoir( const name& token_contract_account, const symbol_code& sym_code )
+         asset get_resevoir( name contract )
          {
-            stats statstable( token_contract_account, sym_code.raw() );
-            const auto& st = statstable.get( sym_code.raw() );
-            return st.resevoir;
+            poolstats pstatstable( get_self(), get_self().value );
+            const auto& to = pstatstable.get( contract.value );
+            return to.resevoir;
+         }
+         asset get_rex_queue( name contract )
+         {
+            poolstats pstatstable( get_self(), get_self().value );
+            const auto& to = pstatstable.get( contract.value );
+            return to.rex_queue;
+         }
+         int get_last_deposit( name contract )
+         {
+            poolstats pstatstable( get_self(), get_self().value );
+            const auto& to = pstatstable.get( contract.value );
+            return to.lastdeposit;
+         }
+         asset get_eos_pool( name contract )
+         {
+            poolstats pstatstable( get_self(), get_self().value );
+            const auto& to = pstatstable.get( contract.value );
+            return to.eospool;
          }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -142,10 +162,26 @@ namespace eosio {
             int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
             int      creationtime;//see above
             asset    totalstake;//see above
-            asset    resevoir;//eos reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
+            asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
+            asset    rex_queue;//eos from mining which will be queued to enter rex every hour
+            int      last_deposit;//last deposit of rex queue 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
             
          };
+
+            struct [[eosio::table]] pool_stats {
+           
+            name     contract;
+            asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
+            asset    rex_queue;//eos from mining which will be queued to enter rex every hour
+            int      lastdeposit;//last deposit of above mining income rex queue 
+            asset    eospool; //total initial eos entered into rex
+
+
+            auto primary_key() const {return contract.value;}
+            
+         };
+
 
          struct [[eosio::table]] proxy {
            name contract;
@@ -158,6 +194,7 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
          typedef eosio::multi_index< "proxytable"_n, proxy > proxies;
+         typedef eosio::multi_index< "poolstat"_n, pool_stats > poolstats;
 
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );

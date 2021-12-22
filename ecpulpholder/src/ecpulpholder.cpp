@@ -234,6 +234,37 @@ void token::setproxy( const name& contract, name proxy, name sender){
 }
 
 
+void token::setpool( asset resevoir, asset rex_queue, asset eospool){
+
+
+require_auth(get_self());
+   
+   poolstats pstatstable( get_self(), get_self().value );
+   auto to = pstatstable.find( get_self().value );
+   if( to == pstatstable.end() ) {
+      pstatstable.emplace( get_self(), [&]( auto& a ){
+        
+        a.resevoir = asset(0, symbol("EOS", 4));
+        a.rex_queue = asset(0, symbol("EOS", 4));
+        a.eospool = asset(0, symbol("EOS", 4));
+        a.lastdeposit = now();
+
+      });
+   }
+   else{
+
+      pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+        a.resevoir = asset(0, symbol("EOS", 4));
+        a.rex_queue = asset(0, symbol("EOS", 4));
+        a.eospool = asset(0, symbol("EOS", 4));
+        a.lastdeposit = now();
+      
+      });
+   }
+}
+
+
 
 [[eosio::on_notify("cpumintofeos::stake")]] 
 void token::setstake(name account, asset value, bool selfdelegate){
@@ -246,9 +277,9 @@ void token::setstake(name account, asset value, bool selfdelegate){
 
      if (selfdelegate == true){
          ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
-         resevoir = get_resevoir(name{"ecpulpholder"},asset(0, symbol("ECPU", 4)).symbol.code());
+         resevoir = get_resevoir(get_self());
          
-         powerup.amount = ((double(value.amount))/(double(ecpusupply.amount))/2);
+         powerup.amount = ((double(value.amount))/(double(ecpusupply.amount)));
 
          action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
                std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
@@ -269,7 +300,7 @@ void token::setdelegate(name account, asset receiver, asset value){
 
     
      ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
-     resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
+     resevoir = get_resevoir(get_self());
          
      powerup.amount = (double(value.amount))/(double(ecpusupply.amount))/2;//get
 
@@ -277,10 +308,8 @@ void token::setdelegate(name account, asset receiver, asset value){
 
      set_resevoir(resevoir);// update resevoir
 
-     action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
-            std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
-     action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
-            std::make_tuple(get_self(), account, powerup)).send();
+     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+            std::make_tuple(get_self(), name{"powerupcalc1"}, powerup,receiver.to_string())).send();
      
 }
 
@@ -306,6 +335,10 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 
          //vote for reward BPS, place into rex
          //no further action
+
+         //TODO------------------------------------------------------------------
+
+         //add to rex_queue, if 24 hours have passed since last addition to REX from mining pool income, then send to rex
           action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
           std::make_tuple(get_self(), proxy, name{""})).send();
 
@@ -350,7 +383,7 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 
    else if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
    //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
-         asset resevoir = get_resevoir(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
+         asset resevoir = get_resevoir(get_self());//get_balance( name{"eosio.token"}, get_self(), symbol_code("EOS"));
    
          action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
                std::make_tuple(get_self(), proxy, name{""})).send();

@@ -72,6 +72,14 @@
                 {
                     "name": "resevoir",
                     "type": "asset"
+                },
+                {
+                    "name": "rex_queue",
+                    "type": "asset"
+                },
+                {
+                    "name": "last_deposit",
+                    "type": "int32"
                 }
             ]
         },
@@ -130,6 +138,32 @@
             ]
         },
         {
+            "name": "pool_stats",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract",
+                    "type": "name"
+                },
+                {
+                    "name": "resevoir",
+                    "type": "asset"
+                },
+                {
+                    "name": "rex_queue",
+                    "type": "asset"
+                },
+                {
+                    "name": "lastdeposit",
+                    "type": "int32"
+                },
+                {
+                    "name": "eospool",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "proxy",
             "base": "",
             "fields": [
@@ -158,6 +192,24 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "setpool",
+            "base": "",
+            "fields": [
+                {
+                    "name": "resevoir",
+                    "type": "asset"
+                },
+                {
+                    "name": "rex_queue",
+                    "type": "asset"
+                },
+                {
+                    "name": "eospool",
+                    "type": "asset"
                 }
             ]
         },
@@ -234,6 +286,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "setpool",
+            "type": "setpool",
+            "ricardian_contract": ""
+        },
+        {
             "name": "setproxy",
             "type": "setproxy",
             "ricardian_contract": ""
@@ -248,6 +305,13 @@
         {
             "name": "accounts",
             "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "poolstat",
+            "type": "pool_stats",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
