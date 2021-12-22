@@ -22,11 +22,6 @@ CONTRACT cpupayouteos : public contract {
     [[eosio::action]] 
     void intdelegatee(name user);
 
-    //modify loading ratio
-
-    [[eosio::action]] 
-    void modifylr(name user, int loadingratio);
-
     //listen to mining 
     [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupowerup(name user);
     
@@ -34,12 +29,11 @@ CONTRACT cpupayouteos : public contract {
     [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, asset value);
     [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, asset value);
     
-    [[eosio::on_notify("ecpulpholder::instapowerup")]] void instapowerup( const name& contract, name receiver, asset powerupamt );
     
     TABLE delegatee { 
       
       name      delegatee;
-      asset     ecpustaked;
+      asset     ecpudelegated;
       uint32_t  delegatetime;
       uint32_t  lastpaytime;
 
@@ -50,14 +44,14 @@ CONTRACT cpupayouteos : public contract {
 
 
 
-    TABLE stakestat {
+    TABLE delstakestat {
       name       contract;
-      asset      totalstaked;
+      asset      totaldelstaked;
      
       
       auto primary_key() const { return contract.value; }
     };
-    typedef multi_index<name("stakestat"), stakestat> stake_stat;
+    typedef multi_index<name("delstakestat"), delstakestat> delstake_stat;
 
 
 
@@ -65,12 +59,11 @@ CONTRACT cpupayouteos : public contract {
       
       name       contract;
       name       currentpayee;
-      int        lastpaytime;
-      asset      remainingpay_ecpu;
-      asset      startpay_ecpu;
-      int        loadingratio; //determines the rate at which divs are loaded from the queue to the active round
+   int32_t       lastpaytime;
+      asset      remainingpay_ecpu; //the remaaining amount of eos corresponding to delegated ECPU to be paid ut during curren round
+      asset      startpay_ecpu;//the amount of eos to be paid out at the start of the round
       asset      stakestart; //the amount of ecpu staked at start of the active round
-      int        payoutstarttime; //the time of the start if the rounf 
+    int32_t      payoutstarttime; //the time of the start if the round
       
       
       
@@ -97,10 +90,6 @@ CONTRACT cpupayouteos : public contract {
         typedef eosio::multi_index< "accounts"_n, account > accounts;
 
         
-        
-
-
-
         struct [[eosio::table]] accountg {
             asset    balance;
             
@@ -124,32 +113,83 @@ CONTRACT cpupayouteos : public contract {
          };
 
 
+static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+      {
+          accounts accountstable( token_contract_account, owner.value );
+          const auto& ac = accountstable.get( sym_code.raw() );
+          return ac.balance;
+      }
+
+
+
  name get_current_payee(){
 
         name payee; 
-
         queue_table queuetable(get_self(), get_self().value);
         auto existing = queuetable.find(get_self().value);
-
         payee = existing->currentpayee;
-
         return payee;
 
     }
 
-    long double get_paying_ratio(){
+    void set_next_round(){ //execute this function after each ECPU mining action to prepare each iteration
 
-        name user = get_current_payee();
-        asset stake = get_userstake(user);
-        asset ss = get_stake_start();
+        //iterate to next payee
+        //see if 12 hours have passed, if so restart starting stake and round time
+       
+
+        set_next_payee(); // a & b & d accomplished here 
 
 
-       long double payout_frac = ((double(stake.amount*1000)) / (double(ss.amount)));
+        if (current_time_point().sec_since_epoch() > (get_payout_start_time()+ (60*60*12))){ 
+                
+                // reset starting stake, starting times, starting payout pool
+                set_ecpu_rpsp(); //restarts remaining pay and starting pay, gets current eos balance to set startpay
+                set_start_stake();
+                return;
+
+        }
+        return;
+}
+
+  void update_last_paid(name user){
+
+    delegatees delegatee(get_self(), get_self().value);
+    auto existing = delegatee.find(user.value);
+    const auto& st = *existing;
+
+    delegatee.emplace( get_self(), [&]( auto& s ) {
+        s.lastpaytime = current_time_point().sec_since_epoch();
+    });
+  }
+
+  uint32_t get_user_last_paid(name user){
+
+    uint32_t lastpaid;
+
+    delegatees delegatee(get_self(), get_self().value);
+    auto existing = delegatee.find(user.value);
+
+    lastpaid = existing->lastpaytime;
+
+    return lastpaid;
+
+
+  }
+
+long double get_paying_ratio(){
+
+    name user = get_current_payee();
+    asset stake = get_userstake(user);
+    asset ss = get_stake_start();
+
+
+    long double payout_frac = ((double(stake.amount*1000)) / (double(ss.amount)));
 
        //check((payout_frac > 0), "error payout fraction is zero");
 
-        return payout_frac;
-    }
+     return payout_frac;
+     }
 
 
 
@@ -353,7 +393,7 @@ CONTRACT cpupayouteos : public contract {
         delegatees delegatee(get_self(), get_self().value);
         auto existing = delegatee.find(user.value);
 
-        stake = existing->ecpustaked;
+        stake = existing->ecpudelegated;
 
         return stake;
 
@@ -397,18 +437,6 @@ CONTRACT cpupayouteos : public contract {
   }
 
 
-  uint32_t get_loading_ratio(){
-
-        uint32_t lr; 
-
-        queue_table queuetable(get_self(), get_self().value);
-        auto existing = queuetable.find(get_self().value);
-
-        lr = existing->loadingratio;
-
-        return lr;
-
-  }
 
 
 
@@ -424,11 +452,7 @@ CONTRACT cpupayouteos : public contract {
         check( existing != queuetable.end(), "contract table not deployed" );
         const auto& st = *existing;
 
-       
-
-
         if (tokensym == "ECPU"){
-
 
                 queuetable.modify( st, same_payer, [&]( auto& s ) {
                     s.remainingpay_ecpu += quantity;
@@ -440,6 +464,9 @@ CONTRACT cpupayouteos : public contract {
 
   }
 
+  
+  
+  
   void update_global_stake(name user, asset stakechange){
 
    
@@ -453,23 +480,24 @@ CONTRACT cpupayouteos : public contract {
     const auto& st = *existing;
 
 
-    stake_stat globalstake(get_self(),get_self().value);
+    delstake_stat globalstake(get_self(),get_self().value);
     auto existing2 = globalstake.find(get_self().value);
     const auto& st2 = *existing2;
 
 
-    if (existing == delegatee.end()){ //CASE 3 CONSIDERED: DIDNT HAVE STAKED BUT NOW DOES
+    if (existing == delegatee.end()){ //CASE 3 CONSIDERED: DIDNT HAVE DELEGATED STAKED BUT NOW DOES
 
         delegatee.emplace( get_self(), [&]( auto& s ) {
 
                         s.delegatee = user;
-                        s.ecpustaked = cpudelegated;
+                        s.ecpudelegated = cpudelegated;
                         s.delegatetime = current_time_point().sec_since_epoch();
+                        s.lastpaytime = current_time_point().sec_since_epoch();
 
                   });
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totalstaked = get_current_stake();
+                        s.totaldelstaked = get_current_stake();
 
                   });
     
@@ -479,13 +507,14 @@ CONTRACT cpupayouteos : public contract {
 
         delegatee.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.ecpustaked = s.ecpustaked + stakechange;
+                        s.ecpudelegated = s.ecpudelegated + stakechange;
                         s.delegatetime = current_time_point().sec_since_epoch();
+                        s.lastpaytime = current_time_point().sec_since_epoch();
 
                   });
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totalstaked = get_current_stake();
+                        s.totaldelstaked = get_current_stake();
 
                   });
 
@@ -514,7 +543,7 @@ CONTRACT cpupayouteos : public contract {
     auto existing = delegatee.find(user.value);
     const auto& st = *existing;
 
-    stake_stat globalstake(get_self(),get_self().value);
+    delstake_stat globalstake(get_self(),get_self().value);
     auto existing2 = globalstake.find(get_self().value);
     const auto& st2 = *existing2;
 
@@ -535,13 +564,7 @@ CONTRACT cpupayouteos : public contract {
 
                   });
 
-
         }
-
-
-
-
-
 
     if (existing == delegatee.end()){
 
@@ -549,41 +572,33 @@ CONTRACT cpupayouteos : public contract {
 
     }
 
-    asset ecpustaked = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
+    asset ecpudelegated = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
-    if (ecpustaked.amount/10000 < (777000)){
+    if (ecpudelegated.amount == (0)){
         
         delegatee.erase(existing);
         
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totalstaked = get_current_stake();
+                        s.totaldelstaked = get_current_stake();
 
                   });
-        
     }
 
     else{
 
         delegatee.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.ecpustaked = s.ecpustaked - stakechange;
+                        s.ecpudelegated = s.ecpudelegated - stakechange;
                         s.delegatetime = current_time_point().sec_since_epoch();
                     });
 
         globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totalstaked = get_current_stake();
+                        s.totaldelstaked = get_current_stake();
 
                   });
-
-
-
     }
-
-        
-
-
   }
 
   asset get_current_stake(){
@@ -595,13 +610,13 @@ CONTRACT cpupayouteos : public contract {
         return ccs;
         **/
         
-        asset ccs = asset(0, symbol("ecpu", 4));
+        asset ccs = asset(0, symbol("ECPU", 4));
         
         
         delegatees delegatee(get_self(), get_self().value);
         for (auto it = delegatee.begin(); it != delegatee.end(); it++){
 
-            ccs = ccs + (it->ecpustaked);
+            ccs = ccs + (it->ecpudelegated);
 
         }
 
@@ -637,112 +652,17 @@ CONTRACT cpupayouteos : public contract {
         check( existing != queuetable.end(), "contract table not deployed" );
         const auto& st = *existing;
 
+        asset currentbal = asset(0.0000, symbol(symbol_code("EOS"),4));
+        auto sym = currentbal.symbol.code();
+        currentbal = get_balance(name{"eosio.token"}, get_self(), sym);
 
-        int lr = get_loading_ratio();
-        asset sp = lr*get_remaining_pay_ecpu()/1000;
+      
+        asset sp = currentbal/2;
 
                 queuetable.modify( st, same_payer, [&]( auto& s ) {
                     s.startpay_ecpu = sp;
-                    s.remainingpay_ecpu = s.remainingpay_ecpu - s.startpay_ecpu;
+                    s.remainingpay_ecpu = asset(0.0000, symbol(symbol_code("EOS"),4));
                 });
 
   }
-
-
-void set_next_round(){
-
-//iterate to next 
-        //a next payee from local stake table
-        //b set current payee to the payee you just retrieved
-        //c check if payee was last payee on the table, if so, begin new payment round
-        //d. current payee set to the start of the staking table
-        //e. queue gets 0.1% moved to active round, so move 0.1% of loading ratio from remaining pay to starting pay for all 3 assets
-        //f. global stake at start needs to get updated in queue table
-        //g.set new payout start time
-
-
-        bool restart_req = is_payee_last(); // c, new payment round is required if true
-
-        set_next_payee(); // a & b & d accomplished here 
-
-        if (restart_req == false){
-
-            return;
-
-        }
-
-        //c: new round required, new round code here and below:
-
-        //e: 
-      
-        set_ecpu_rpsp();
-     
-
-        //f&g: 
-        set_start_stake();
-      
-
-
-
-}
-
-//BELOW FROM EOSIO.SYSTEM.HPP PERTAINING TO POWERUP SYSTEM
-//NEEDED IN ORDER TO FIND SPOT PRICE OF CPU
-
- static constexpr int64_t powerup_frac = 1'000'000'000'000'000ll;  // 1.0 = 10^15 WARNING CONVERTED FROM INLINE TO STATC TO AVOID ERROR
- static constexpr uint32_t seconds_per_day       = 24 * 3600;
-
-struct powerup_state_resource {
-      static constexpr double   default_exponent   = 2.0;                  // Exponent of 2.0 means that the price to reserve a
-                                                                           //    tiny amount of resources increases linearly
-                                                                           //    with utilization.
-      static constexpr uint32_t default_decay_secs = 1 * seconds_per_day;  // 1 day; if 100% of bandwidth resources are in a
-                                                                           //    single loan, then, assuming no further powerup usage,
-                                                                           //    1 day after it expires the adjusted utilization
-                                                                           //    will be at approximately 37% and after 3 days
-                                                                           //    the adjusted utilization will be less than 5%.
-
-      uint8_t        version                 = 0;
-      int64_t        weight                  = 0;                  // resource market weight. calculated; varies over time.
-                                                                   //    1 represents the same amount of resources as 1
-                                                                   //    satoshi of SYS staked.
-      int64_t        weight_ratio            = 0;                  // resource market weight ratio:
-                                                                   //    assumed_stake_weight / (assumed_stake_weight + weight).
-                                                                   //    calculated; varies over time. 1x = 10^15. 0.01x = 10^13.
-      int64_t        assumed_stake_weight    = 0;                  // Assumed stake weight for ratio calculations.
-      int64_t        initial_weight_ratio    = powerup_frac;        // Initial weight_ratio used for linear shrinkage.
-      int64_t        target_weight_ratio     = powerup_frac / 100;  // Linearly shrink the weight_ratio to this amount.
-      time_point_sec initial_timestamp       = {};                 // When weight_ratio shrinkage started
-      time_point_sec target_timestamp        = {};                 // Stop automatic weight_ratio shrinkage at this time. Once this
-                                                                   //    time hits, weight_ratio will be target_weight_ratio.
-      double         exponent                = default_exponent;   // Exponent of resource price curve.
-      uint32_t       decay_secs              = default_decay_secs; // Number of seconds for the gap between adjusted resource
-                                                                   //    utilization and instantaneous utilization to shrink by 63%.
-      asset          min_price               = {};                 // Fee needed to reserve the entire resource market weight at
-                                                                   //    the minimum price (defaults to 0).
-      asset          max_price               = {};                 // Fee needed to reserve the entire resource market weight at
-                                                                   //    the maximum price.
-      int64_t        utilization             = 0;                  // Instantaneous resource utilization. This is the current
-                                                                   //    amount sold. utilization <= weight.
-      int64_t        adjusted_utilization    = 0;                  // Adjusted resource utilization. This is >= utilization and
-                                                                   //    <= weight. It grows instantly but decays exponentially.
-      time_point_sec utilization_timestamp   = {};                 // When adjusted_utilization was last updated
-   };
-
-   struct [[eosio::table("powup.state"),eosio::contract("eosio.system")]] powerup_state {
-      static constexpr uint32_t default_powerup_days = 30; // 30 day resource powerups
-
-      uint8_t                    version           = 0;
-      powerup_state_resource     net               = {};                     // NET market state
-      powerup_state_resource     cpu               = {};                     // CPU market state
-      uint32_t                   powerup_days      = default_powerup_days;   // `powerup` `days` argument must match this.
-      asset                      min_powerup_fee   = {};                     // fees below this amount are rejected
-
-      uint64_t primary_key()const { return 0; }
-   };
-
-
-
- 
-
 };
