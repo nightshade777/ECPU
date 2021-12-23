@@ -27,9 +27,6 @@ using namespace eosio;
          [[eosio::on_notify("eosio.token::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
 
-         [[eosio::on_notify("cpumintofeos::stake")]] 
-         void setstake(name account, asset value, bool selfdelegate);
-
          [[eosio::on_notify("cpumintofeos::delegate")]] 
          void setdelegate(name account, asset receiver, asset value);
 
@@ -177,13 +174,9 @@ using namespace eosio;
             });
 
          }
-
-      
-      
       private:
          struct [[eosio::table]] account {
             asset    balance;
-
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
