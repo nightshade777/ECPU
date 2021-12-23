@@ -20,8 +20,8 @@ void token::create( const name&   issuer,
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
        s.issuer        = issuer;
-       s.creationtime  = now();
-       s.prevmine = now();
+       s.creationtime  = current_time_point().sec_since_epoch();
+       s.prevmine = current_time_point().sec_since_epoch();
        s.totalstake =  asset(0, symbol("ECPU", 4));//initialize asset to zero
        s.totaldelegate =  asset(0, symbol("ECPU", 4));//initialize asset to zero
        
@@ -114,7 +114,7 @@ void token::sub_balance( const name& owner, const asset& value ) {
     this function has been modified from eosio.token to implement staking system
     it blocks transacting with stored balance and balances that are undergoing the three day clear period
     **/
-    uint32_t time_now = now();
+    uint32_t time_now = current_time_point().sec_since_epoch();
     uint32_t one_day_time = 60*60*24;//1 days in seconds
    
    
@@ -273,7 +273,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       stats statstable( _self, sym.raw() );
       const auto& st = statstable.get( sym.raw());
 
-      uint32_t time_now = now();
+      uint32_t time_now = current_time_point().sec_since_epoch();
       uint32_t one_day_time = 60*60*24;
       
       //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
@@ -340,7 +340,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       check( value.symbol == st.supply.symbol, "symbol precision mismatch" );
       check( value.symbol.is_valid(), "invalid symbol name" );
     
-      uint32_t time_now = now();
+      uint32_t time_now = current_time_point().sec_since_epoch();
       uint32_t one_day_time = 60*60*24;
 
       //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
@@ -455,7 +455,7 @@ void token::stake(name account, asset value, bool selfdelegate)
           delegatetable.emplace( account, [&]( auto& a ){
                 a.recipient = receiver;
                 a.cpupower = value;
-                a.delegatetime = now();
+                a.delegatetime = current_time_point().sec_since_epoch();
           });
       }
       //if delegatee/receiver already exists as a existing receiver for the delegator, add to existing balance
@@ -463,7 +463,7 @@ void token::stake(name account, asset value, bool selfdelegate)
           delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 a.recipient = receiver;
                 a.cpupower = a.cpupower + value;
-                a.delegatetime = now();
+                a.delegatetime = current_time_point().sec_since_epoch();
           });
       }
       
@@ -491,7 +491,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
           delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 
-                check((a.delegatetime+(60*60*12)) <= now(),"must wait 12 hours to undelegate");
+                check((a.delegatetime+(60*60*12)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
                 initialcpupower = a.cpupower;
                 a.cpupower = a.cpupower - value;
                 finalcpupower = a.cpupower;

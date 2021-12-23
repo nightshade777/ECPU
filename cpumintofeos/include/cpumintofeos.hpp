@@ -1,16 +1,11 @@
 #pragma once
 
-#include <eosiolib/asset.hpp>
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
+#include <eosio/system.hpp>
+
 #include <string>
 #include <math.h>
-#include <eosiolib/system.hpp>
-#include <eosiolib/crypto.hpp>
-#include <eosiolib/multi_index.hpp>
-#include <eosiolib/transaction.hpp>
-#include <eosiolib/permission.h>
-#include <eosiolib/time.hpp>
-
 
 
 namespace eosiosystem {
@@ -231,7 +226,7 @@ namespace eosio {
 
       void mine(name from){
 
-        int elapsedpm = now() - get_prevmine(get_self(), symbol_code("ECPU"));
+        int elapsedpm = current_time_point().sec_since_epoch() - get_prevmine(get_self(), symbol_code("ECPU"));
         asset balance = get_balance(get_self(),get_self(), symbol_code("ECPU"));
 
     
@@ -252,7 +247,7 @@ namespace eosio {
             const auto& st = *existing;
 
             statstable.modify( st, same_payer, [&]( auto& s ) {
-                s.prevmine = now();
+                s.prevmine = current_time_point().sec_since_epoch();
             });
 
           }
