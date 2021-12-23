@@ -73,17 +73,12 @@ using namespace eosio;
             return to.resevoir;
          }
 
-         //SET RESEVOIR
-         
-
          asset get_rex_queue()
          {
             poolstats pstatstable( get_self(), get_self().value );
             const auto& to = pstatstable.get( get_self().value );
             return to.rex_queue;
          }
-
-         //SET REX QUEUE AMOUNT
 
          int get_last_rexqueue()
          {
@@ -92,7 +87,6 @@ using namespace eosio;
             return to.lastdeposit;
          }
 
-         //SET REX QUEUE TIME
          asset get_eos_pool()
          {
             poolstats pstatstable( get_self(), get_self().value );
@@ -106,8 +100,6 @@ using namespace eosio;
             const auto& to = pstatstable.get( get_self().value );
             return to.lastdailypay;
          }
-
-         //SET EOS POOL
 
          void add_resevoir(asset input){
 
