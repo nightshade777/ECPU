@@ -2,61 +2,27 @@
 
 #pragma once
 
-#include <eosiolib/asset.hpp>
-#include <eosiolib/eosio.hpp>
+#include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
 #include <eosio/system.hpp>
 
-#include <string>
-
-
-
-namespace eosiosystem {
-   class system_contract;
-}
-
-namespace eosio {
+using namespace eosio;
 
    using std::string;
 
    
-   class [[eosio::contract("ecpulpholder")]] token : public contract {
+   CONTRACT ecpulpholder: public contract {
+      
       public:
          using contract::contract;
 
          
-         [[eosio::action]]
-         void create( const name&   issuer,
-                      const asset&  maximum_supply);
-         
-         [[eosio::action]]
-         void issue( const name& to, const asset& quantity, const string& memo );
-
-         
-         [[eosio::action]]
-         void retire( const asset& quantity, const string& memo );
-
-         
-         [[eosio::action]]
-         void transfer( const name&    from,
-                        const name&    to,
-                        const asset&   quantity,
-                        const string&  memo );
-         
-         [[eosio::action]]
-         void open( const name& owner, const symbol& symbol, const name& ram_payer );
-
-        
-         [[eosio::action]]
-         void close( const name& owner, const symbol& symbol );
-
-         [[eosio::action]]
-         void instapowerup( const name& contract, name receiver, asset powerupamt );
 
          [[eosio::action]]
          void setproxy( const name& contract, name proxy, name sender);
 
          [[eosio::action]]
-         void setpool(asset resevoir, asset rex_queue, asset eospool);
+         void setpool(asset resevoir, asset rex_queue, asset eospool, asset lastpay);
 
          [[eosio::on_notify("eosio.token::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
@@ -137,6 +103,13 @@ namespace eosio {
             return to.eospool;
          }
 
+          asset get_last_daily_pay()
+         {
+            poolstats pstatstable( get_self(), get_self().value );
+            const auto& to = pstatstable.get( get_self().value );
+            return to.lastdailypay;
+         }
+
          //SET EOS POOL
 
          void add_resevoir(asset input){
@@ -192,12 +165,20 @@ namespace eosio {
 
          }
 
-         using create_action = eosio::action_wrapper<"create"_n, &token::create>;
-         using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
-         using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
-         using transfer_action = eosio::action_wrapper<"transfer"_n, &token::transfer>;
-         using open_action = eosio::action_wrapper<"open"_n, &token::open>;
-         using close_action = eosio::action_wrapper<"close"_n, &token::close>;
+         void set_last_daily_pay(asset input){
+
+             poolstats pstatstable( get_self(), get_self().value );
+             auto to = pstatstable.find( get_self().value );
+
+             pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+               a.lastdailypay = input;
+               
+            });
+
+         }
+
+      
       
       private:
          struct [[eosio::table]] account {
@@ -214,14 +195,11 @@ namespace eosio {
             int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
             int      creationtime;//see above
             asset    totalstake;//see above
-            asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
-            asset    rex_queue;//eos from mining which will be queued to enter rex every hour
-            int      last_deposit;//last deposit of rex queue 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
             
          };
 
-            struct [[eosio::table]] pool_stats {
+         struct [[eosio::table]] pool_stats {
            
             name     contract;
             asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
@@ -229,11 +207,12 @@ namespace eosio {
             int      lastdeposit;//time of last deposit of above mining income rex queue 
             asset    eospool; //total initial eos entered into rex
 
+            asset    lastdailypay;//amount sent to contract daily
+
 
             auto primary_key() const {return contract.value;}
             
          };
-
 
          struct [[eosio::table]] proxy {
            name contract;
@@ -248,8 +227,6 @@ namespace eosio {
          typedef eosio::multi_index< "proxytable"_n, proxy > proxies;
          typedef eosio::multi_index< "poolstat"_n, pool_stats > poolstats;
 
-         void sub_balance( const name& owner, const asset& value );
-         void add_balance( const name& owner, const asset& value, const name& ram_payer );
+         
    };
 
-}
