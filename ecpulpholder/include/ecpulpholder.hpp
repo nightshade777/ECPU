@@ -4,8 +4,11 @@
 
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
+#include <eosio/system.hpp>
 
 #include <string>
+
+
 
 namespace eosiosystem {
    class system_contract;
@@ -64,21 +67,6 @@ namespace eosio {
          [[eosio::on_notify("cpumintofeos::delegate")]] 
          void setdelegate(name account, asset receiver, asset value);
 
-         void set_resevoir( const asset& quantity){ //update resevoir in stat table
-
-                  auto sym = asset(0, symbol("ECPU", 4)).symbol;
-                  stats statstable( get_self(), sym.code().raw() );
-                  auto existing = statstable.find( sym.code().raw() );
-                  check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
-                  const auto& st = *existing;
-                  require_auth( st.issuer );
-                  check( quantity.is_valid(), "invalid quantity" );
-                  check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-                  statstable.modify( st, same_payer, [&]( auto& s ) {
-                        s.resevoir = quantity;
-                  });
-                  
-         }
 
          name get_proxy(name contract)
          {// get name of proxy from table to vote for
@@ -115,29 +103,93 @@ namespace eosio {
             return st.totalstake;
          }
 
-         asset get_resevoir( name contract )
+         asset get_resevoir()
          {
             poolstats pstatstable( get_self(), get_self().value );
-            const auto& to = pstatstable.get( contract.value );
+            const auto& to = pstatstable.get( get_self().value );
             return to.resevoir;
          }
-         asset get_rex_queue( name contract )
+
+         //SET RESEVOIR
+         
+
+         asset get_rex_queue()
          {
             poolstats pstatstable( get_self(), get_self().value );
-            const auto& to = pstatstable.get( contract.value );
+            const auto& to = pstatstable.get( get_self().value );
             return to.rex_queue;
          }
-         int get_last_deposit( name contract )
+
+         //SET REX QUEUE AMOUNT
+
+         int get_last_rexqueue()
          {
             poolstats pstatstable( get_self(), get_self().value );
-            const auto& to = pstatstable.get( contract.value );
+            const auto& to = pstatstable.get( get_self().value );
             return to.lastdeposit;
          }
-         asset get_eos_pool( name contract )
+
+         //SET REX QUEUE TIME
+         asset get_eos_pool()
          {
             poolstats pstatstable( get_self(), get_self().value );
-            const auto& to = pstatstable.get( contract.value );
+            const auto& to = pstatstable.get( get_self().value );
             return to.eospool;
+         }
+
+         //SET EOS POOL
+
+         void add_resevoir(asset input){
+
+             poolstats pstatstable( get_self(), get_self().value );
+             auto to = pstatstable.find( get_self().value );
+
+             pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+               a.resevoir = a.resevoir + input;
+               
+            });
+
+         }
+
+         void add_rex_queue(asset input){
+
+             poolstats pstatstable( get_self(), get_self().value );
+             auto to = pstatstable.find( get_self().value );
+
+             pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+             a.rex_queue = a.rex_queue + input;
+               
+             });
+
+         }
+
+         void add_queue_to_eospool(){
+
+             poolstats pstatstable( get_self(), get_self().value );
+             auto to = pstatstable.find( get_self().value );
+
+             pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+               a.eospool = a.eospool + a.rex_queue;
+               a.rex_queue = asset(0, symbol("EOS", 4));
+               a.lastdeposit = current_time_point().sec_since_epoch();
+            });
+
+         }
+
+         void clear_resevoir(){
+
+             poolstats pstatstable( get_self(), get_self().value );
+             auto to = pstatstable.find( get_self().value );
+
+             pstatstable.modify( to, get_self(), [&]( auto& a ) {
+       
+               a.resevoir = asset(0, symbol("EOS", 4));
+               
+            });
+
          }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
@@ -174,7 +226,7 @@ namespace eosio {
             name     contract;
             asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
             asset    rex_queue;//eos from mining which will be queued to enter rex every hour
-            int      lastdeposit;//last deposit of above mining income rex queue 
+            int      lastdeposit;//time of last deposit of above mining income rex queue 
             asset    eospool; //total initial eos entered into rex
 
 

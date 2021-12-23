@@ -247,7 +247,7 @@ require_auth(get_self());
         a.resevoir = asset(0, symbol("EOS", 4));
         a.rex_queue = asset(0, symbol("EOS", 4));
         a.eospool = asset(0, symbol("EOS", 4));
-        a.lastdeposit = now();
+        a.lastdeposit = current_time_point().sec_since_epoch();
 
       });
    }
@@ -255,10 +255,10 @@ require_auth(get_self());
 
       pstatstable.modify( to, get_self(), [&]( auto& a ) {
        
-        a.resevoir = asset(0, symbol("EOS", 4));
-        a.rex_queue = asset(0, symbol("EOS", 4));
-        a.eospool = asset(0, symbol("EOS", 4));
-        a.lastdeposit = now();
+        a.resevoir = resevoir;
+        a.rex_queue = rex_queue
+        a.eospool = eospool;
+        a.lastdeposit = current_time_point().sec_since_epoch();
       
       });
    }
@@ -266,29 +266,7 @@ require_auth(get_self());
 
 
 
-[[eosio::on_notify("cpumintofeos::stake")]] 
-void token::setstake(name account, asset value, bool selfdelegate){
 
-     //if delegating in middle of round, send corresponding proportion from resevoir and powerup account immediately
-
-     asset powerup = asset(0, symbol("EOS", 4)); //nitiaize powerup with eos asset, change amount in next step 
-     asset ecpusupply;
-     asset resevoir;
-
-     if (selfdelegate == true){
-         ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());
-         resevoir = get_resevoir(get_self());
-         
-         powerup.amount = ((double(value.amount))/(double(ecpusupply.amount)));
-
-         action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "transfer"_n, 
-               std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string("Insta Powerup"))).send();
-      
-         action(permission_level{get_self(), "active"_n}, "ecpulpholder"_n, "instapowerup"_n, 
-               std::make_tuple(get_self(), account, powerup)).send();
-         
-     }
-}
 [[eosio::on_notify("cpumintofeos::delegate")]] 
 void token::setdelegate(name account, asset receiver, asset value){
 
@@ -304,9 +282,9 @@ void token::setdelegate(name account, asset receiver, asset value){
          
      powerup.amount = (double(value.amount))/(double(ecpusupply.amount))/2;//get
 
-     resevoir = resevoir - powerup; //remove this powerup amout from resevoir
+    //remove this powerup amout from resevoir
 
-     set_resevoir(resevoir);// update resevoir
+     add_resevoir(-powerup);// update resevoir
 
      action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
             std::make_tuple(get_self(), name{"powerupcalc1"}, powerup,receiver.to_string())).send();
@@ -318,6 +296,7 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 //three types of eos being received, mining income, voting income, and LP income
    name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
    name proxy_sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
+   asset deposit;
 
    if (to != get_self()){
         return;
@@ -339,11 +318,25 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
          //TODO------------------------------------------------------------------
 
          //add to rex_queue, if 24 hours have passed since last addition to REX from mining pool income, then send to rex
-          action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-          std::make_tuple(get_self(), proxy, name{""})).send();
 
-          action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-          std::make_tuple(get_self(), quantity)).send();
+         add_rex_queue(quantity);
+
+         //ADD VOID FUNCTION TO ADD INING INCOME INTO REX QUEUE
+
+         if (current_time_point().sec_since_epoch() >= (get_last_rexqueue()+(60*60*24)){
+
+               deposit = get_req_queue();
+               add_queue_to_eospool();
+               
+               action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+               std::make_tuple(get_self(), proxy, name{""})).send();
+
+               action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+               std::make_tuple(get_self(), quantity)).send();
+
+
+
+               }
 
           return;
          
@@ -390,7 +383,8 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
 
          action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
                std::make_tuple(get_self(), resevoir)).send();
-   
+        
+         void clear_resevoir();
    // send stake/supply* received to iteration contract
          asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code()); //find total supply of ECPU 
          asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 4)).symbol.code());//find total stake of ECPU
@@ -399,7 +393,8 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
          check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
          check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
          resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
-         set_resevoir(resevoir);// update resevoir
+         
+         add_resevoir(resevoir);// update resevoir
    }
    else{ 
 
