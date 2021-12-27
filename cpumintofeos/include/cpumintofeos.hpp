@@ -163,8 +163,9 @@ namespace eosio {
               
     asset get_issue_rate(asset supply){
 
-        asset issuereward = asset(0, symbol("CPU", 4));
+        asset issuereward = asset(317, symbol("CPU", 4)); //100K TOKENS PER YEAR
         
+        /** CODE BELOW FOR DISINFLATION MODEL
         if (supply.amount/10000 <= 25920000){
             issuereward.amount = 10*10000;}
         
@@ -196,7 +197,7 @@ namespace eosio {
             issuereward.amount = 1*10000;}
         
         else {issuereward.amount = 5*1000;}
-
+        **/
             return issuereward;
 
     }
