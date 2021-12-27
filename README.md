@@ -1,5 +1,5 @@
 # ECPU
-Feeless, Decentralized, and Autonomous Resource Management System on EOS
+Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS
 
 
 
