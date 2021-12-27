@@ -76,11 +76,6 @@ void cpupayouteos::intdelegatee(name user){
       auto existing = delegatee.find(user.value);
       const auto& st = *existing;
 
-
-
-      
-      
-
       if (existing == delegatee.end()){
 
       
