@@ -22,10 +22,7 @@ namespace eosio {
          using contract::contract;
 
 
-         // mining------------------------------------------------------
          
-        [[eosio::on_notify("eosio.token::transfer")]]
-         void claim(name from, name to, eosio::asset quantity, std::string memo);
          
          //standard token contract actions -----------------------------------------------
          
@@ -77,7 +74,7 @@ namespace eosio {
 
 
          [[eosio::action]] 
-         void destroytoken(std::string symbol);
+         void destroytoken(asset token);
 
 
          [[eosio::action]] 
@@ -85,6 +82,11 @@ namespace eosio {
 
          [[eosio::action]] 
          void minereceipt( name user);
+
+         // mining------------------------------------------------------
+         
+        [[eosio::on_notify("eosio.token::transfer")]]
+         void claim(name from, name to, eosio::asset quantity, std::string memo);
          
          
          static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
@@ -94,14 +96,14 @@ namespace eosio {
             return st.supply;
          }
 
-         int get_prevmine( const name& token_contract_account, const symbol_code& sym_code )
+         uint32_t get_prevmine( const name& token_contract_account, const symbol_code& sym_code )
          {
             stats statstable( token_contract_account, sym_code.raw() );
             const auto& st = statstable.get( sym_code.raw() );
             return st.prevmine;
          }
 
-         int get_ctime( const name& token_contract_account, const symbol_code& sym_code )
+         uint32_t get_ctime( const name& token_contract_account, const symbol_code& sym_code )
          {
             stats statstable( token_contract_account, sym_code.raw() );
             const auto& st = statstable.get( sym_code.raw() );
@@ -161,46 +163,6 @@ namespace eosio {
             return true;
          }
               
-    asset get_issue_rate(asset supply){
-
-        asset issuereward = asset(317, symbol("CPU", 4)); //100K TOKENS PER YEAR
-        
-        /** CODE BELOW FOR DISINFLATION MODEL
-        if (supply.amount/10000 <= 25920000){
-            issuereward.amount = 10*10000;}
-        
-        else if (supply.amount/10000 <= 49248000){
-            issuereward.amount = 9*10000;}
-        
-        else if (supply.amount/10000 <= 69984000){
-            issuereward.amount = 8*10000;}
-        
-        else if (supply.amount/10000 <= 88128000){
-            issuereward.amount = 7*10000;}
-        
-        else if (supply.amount/10000 <= 103680000){
-            issuereward.amount = 6*10000;}
-        
-        else if (supply.amount/10000 <= 116640000){
-            issuereward.amount = 5*10000;}
-        
-        else if (supply.amount/10000 <= 127008000){
-            issuereward.amount = 4*10000;}
-        
-        else if (supply.amount/10000 <= 134784000){
-            issuereward.amount = 3*10000;}
-        
-        else if (supply.amount/10000 <= 139968000){
-            issuereward.amount = 2*10000;}
-        
-        else if (supply.amount/10000 <= 210000000){
-            issuereward.amount = 1*10000;}
-        
-        else {issuereward.amount = 5*1000;}
-        **/
-            return issuereward;
-
-    }
 
     void updatestake(asset quantity){
 
@@ -224,25 +186,25 @@ namespace eosio {
         });
 }
 
-    int get_last_deposit()
+    uint32_t get_last_deposit()
          {
             stats statstable( get_self(), get_self().value );
             const auto& to = statstable.get( get_self().value );
             return to.lastdeposit;
+            
     
     }
 
       void mine(name from){
 
-        int elapsedpm = current_time_point().sec_since_epoch() - get_prevmine(get_self(), symbol_code("ECPU"));
+        uint32_t elapsedpm = current_time_point().sec_since_epoch() - get_prevmine(get_self(), symbol_code("ECPU"));
         asset balance = get_balance(get_self(),get_self(), symbol_code("ECPU"));
 
     
-        if (elapsedpm > 0){
+        if (elapsedpm > 180){ //if 3 minutes have passed since last mining event, issue a 1 new mining reward, dont issue for dead spaces
       
-            asset supply = get_supply(get_self(), symbol_code("ECPU"));
-            asset issuerate = get_issue_rate(supply);
-            asset issue = issuerate*elapsedpm;
+            int rewardcount =  elapsedpm / 180;
+            asset issue =  rewardcount * asset(10000, symbol("CPU", 4));
 
             action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "issue"_n, 
             std::make_tuple(get_self(), issue, std::string("issue new ECPU rewards"))).send();
@@ -281,7 +243,7 @@ namespace eosio {
             asset    storebalance; //transfer blocker var, total ecpu locked
             asset    cpupower; //ecpu staked to bal (includes staked from others)
             asset    unstaking;
-            int32_t unstake_time;
+            uint32_t unstake_time;
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
@@ -290,9 +252,9 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            int32_t  prevmine;
-            int32_t  creationtime;
-            int32_t  lastdeposit;//time of last deposit of above mining income rex queue 
+            uint32_t  prevmine;
+            uint32_t  creationtime;
+            uint32_t  lastdeposit;//time of last deposit of above mining income rex queue 
             asset    totalstake;
             asset    totaldelegate;
 
@@ -304,7 +266,7 @@ namespace eosio {
             
             name     recipient;
             asset    cpupower;
-            int32_t  delegatetime;
+            uint32_t  delegatetime;
             
 
             uint64_t primary_key()const { return recipient.value; } 
@@ -321,4 +283,6 @@ namespace eosio {
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
    };
    
-} /// namespace eosio
+} /// namespace eosio 
+
+

@@ -75,14 +75,22 @@
                 },
                 {
                     "name": "prevmine",
-                    "type": "int32"
+                    "type": "uint32"
                 },
                 {
                     "name": "creationtime",
-                    "type": "int32"
+                    "type": "uint32"
+                },
+                {
+                    "name": "lastdeposit",
+                    "type": "uint32"
                 },
                 {
                     "name": "totalstake",
+                    "type": "asset"
+                },
+                {
+                    "name": "totaldelegate",
                     "type": "asset"
                 }
             ]
@@ -116,6 +124,10 @@
                 {
                     "name": "cpupower",
                     "type": "asset"
+                },
+                {
+                    "name": "delegatetime",
+                    "type": "uint32"
                 }
             ]
         },
@@ -138,8 +150,8 @@
             "base": "",
             "fields": [
                 {
-                    "name": "symbol",
-                    "type": "string"
+                    "name": "token",
+                    "type": "asset"
                 }
             ]
         },
@@ -158,6 +170,16 @@
                 {
                     "name": "memo",
                     "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "minereceipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
                 }
             ]
         },
@@ -185,6 +207,20 @@
             "fields": [
                 {
                     "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "open3",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "recipient",
                     "type": "name"
                 }
             ]
@@ -272,6 +308,10 @@
                 {
                     "name": "value",
                     "type": "asset"
+                },
+                {
+                    "name": "selfdelegate",
+                    "type": "bool"
                 }
             ]
         }
@@ -308,6 +348,11 @@
             "ricardian_contract": ""
         },
         {
+            "name": "minereceipt",
+            "type": "minereceipt",
+            "ricardian_contract": ""
+        },
+        {
             "name": "open",
             "type": "open",
             "ricardian_contract": ""
@@ -315,6 +360,11 @@
         {
             "name": "open2",
             "type": "open2",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open3",
+            "type": "open3",
             "ricardian_contract": ""
         },
         {

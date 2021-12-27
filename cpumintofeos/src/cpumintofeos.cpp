@@ -15,7 +15,7 @@ void token::create( const name&   issuer,
     stats statstable( get_self(), sym.code().raw() );
     auto existing = statstable.find( sym.code().raw() );
     check( existing == statstable.end(), "token with symbol already exists" );
-
+   
     statstable.emplace( get_self(), [&]( auto& s ) {
        s.supply.symbol = maximum_supply.symbol;
        s.max_supply    = maximum_supply;
@@ -384,15 +384,23 @@ void token::stake(name account, asset value, bool selfdelegate)
     
     }
 
-  void token::destroytoken(std::string symbol) {
+  void token::destroytoken(asset token) {
+    
     require_auth(get_self());
 
-    symbol_code sym(symbol);
-    stats stats_table(get_self(), sym.raw());
-    auto existing = stats_table.find(sym.raw());
-    check(existing != stats_table.end(), "Token with symbol does not exist");
+   auto sym = token.symbol;
 
-    stats_table.erase(existing);
+   stats statstable( get_self(), sym.code().raw() );
+   auto existing = statstable.find( sym.code().raw() );
+  
+    check(existing != statstable.end(), "Token with symbol does not exist");
+
+    statstable.erase(existing);
+
+
+
+
+
   }
 
  void token::destroyacc(std::string symbol, name account) {
@@ -524,7 +532,7 @@ void token::stake(name account, asset value, bool selfdelegate)
     updatedelegate(-value);
      }
      
-void minereceipt( name user){
+void token::minereceipt( name user){
     //no permissions required, this is simply to iterate the powerup payouts, it will be triggered by this contract when receiving eos
     //from mining but can also be executed from any account as an auxilary help function to iterate the payout contract as well
     require_recipient(name{"cpupayouteos"});
@@ -540,7 +548,7 @@ void minereceipt( name user){
    action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
       std::make_tuple(from)).send();
 
-   check(quantity.amount == 100, "Transfer amount to mine must be equal to 0.01 EOS");
+   check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
    asset currentbal = asset(0.0000, symbol(symbol_code("EOS"),4));
    auto sym = currentbal.symbol.code();
@@ -556,7 +564,6 @@ void minereceipt( name user){
    mine(from);
   
 }
-
 
 
 } /// namespace eosio
