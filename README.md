@@ -9,7 +9,7 @@ Feeless, Decentralized, and Autonomous Resource Management System on EOS
 
 Contract Division of Functions:
 
-**cpumintofeos**: handles ECPU mining code, receives eos from mining and distributes to ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanet REX pool
+**cpumintofeos**: handles ECPU mining code, receives eos from mining and distributes to ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanent REX pool every hour
 
 **ecpulpholder**: handles staking to rex, voting, receiving vote rewards, and issuing correct amount of eos to the cpupayouteos for powerup distrubution for ECPU delegatees ( proportion corresponding to unstaked ECPU remains liquid in a reserve which will be sent directly for powerup purchase in the case of ECPU being delegated mid-round)
 
