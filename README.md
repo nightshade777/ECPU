@@ -23,6 +23,7 @@ Contract Division of Functions:
 
 
 
+**PROJECT DESCRIPTION**
 
 ECPU is aiming to take the next step to abstract away CPU and NET for users on the EOS mainnet, while also adding deflationary pressure to EOS by locking EOS into REX permanently. 
 
