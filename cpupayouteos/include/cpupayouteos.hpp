@@ -59,11 +59,11 @@ CONTRACT cpupayouteos : public contract {
       
       name       contract;
       name       currentpayee;
-   int32_t       lastpaytime;
+   uint32_t       lastpaytime;
       asset      remainingpay_ecpu; //the remaaining amount of eos corresponding to delegated ECPU to be paid ut during curren round
       asset      startpay_ecpu;//the amount of eos to be paid out at the start of the round
       asset      stakestart; //the amount of ecpu staked at start of the active round
-    int32_t      payoutstarttime; //the time of the start if the round
+    uint32_t      payoutstarttime; //the time of the start if the round
       
       
       
@@ -104,8 +104,8 @@ CONTRACT cpupayouteos : public contract {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            int      prevmine;
-            int      creationtime;
+            uint32_t      prevmine;
+            uint32_t      creationtime;
             asset    totalstake;
             asset    totaldelegate;
 

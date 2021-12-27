@@ -57,11 +57,11 @@
                 },
                 {
                     "name": "prevmine",
-                    "type": "int32"
+                    "type": "uint32"
                 },
                 {
                     "name": "creationtime",
-                    "type": "int32"
+                    "type": "uint32"
                 },
                 {
                     "name": "totalstake",
@@ -147,7 +147,7 @@
                 },
                 {
                     "name": "lastpaytime",
-                    "type": "int32"
+                    "type": "uint32"
                 },
                 {
                     "name": "remainingpay_ecpu",
@@ -163,7 +163,7 @@
                 },
                 {
                     "name": "payoutstarttime",
-                    "type": "int32"
+                    "type": "uint32"
                 }
             ]
         },
