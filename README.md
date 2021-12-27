@@ -17,3 +17,20 @@ Contract Division of Functions:
 
 **powerupcalc1**: receives eos and an account name in the memo, purchases powerup for that account with approximtely 99.9% to CPU and 0.1% to NET
 
+
+
+
+
+
+
+
+ECPU is aiming to take the next step to abstract away CPU and NET for users on the EOS mainnet, while also adding deflationary pressure to EOS by locking EOS into REX permanently. 
+
+Staking ECPU allows you to receive powerups automatically every 12 hours.p You can also delegate your ECPU to multiple accounts. This allows for a seemless experience for users with delegated ECPU and can be integrated in a wallet agnostic manner. 
+
+
+ These powerups are funded by stake rewards received by the eos pool permanently staked to Rex. Unstaked/undelegated ECPU resides in a reservoir pool that will be reserved in case a user delegates mid-round, and this unused reservoir will be reinvested into the permanent Rex pool at the end of the round.
+
+ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specified in round one has been built and is currently being tested on the Jungle3 eosio testnet.
+
+
