@@ -56,10 +56,6 @@
                     "type": "asset"
                 },
                 {
-                    "name": "rex_queue",
-                    "type": "asset"
-                },
-                {
                     "name": "lastdeposit",
                     "type": "int32"
                 },
@@ -97,10 +93,6 @@
             "fields": [
                 {
                     "name": "resevoir",
-                    "type": "asset"
-                },
-                {
-                    "name": "rex_queue",
                     "type": "asset"
                 },
                 {

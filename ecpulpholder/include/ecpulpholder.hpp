@@ -16,13 +16,11 @@ using namespace eosio;
       public:
          using contract::contract;
 
-         
-
          [[eosio::action]]
          void setproxy( const name& contract, name proxy, name sender);
 
          [[eosio::action]]
-         void setpool(asset resevoir, asset rex_queue, asset eospool, asset lastpay);
+         void setpool(asset resevoir, asset eospool, asset lastpay);
 
          [[eosio::on_notify("eosio.token::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
@@ -73,13 +71,6 @@ using namespace eosio;
             return to.resevoir;
          }
 
-         asset get_rex_queue()
-         {
-            poolstats pstatstable( get_self(), get_self().value );
-            const auto& to = pstatstable.get( get_self().value );
-            return to.rex_queue;
-         }
-
          int get_last_rexqueue()
          {
             poolstats pstatstable( get_self(), get_self().value );
@@ -114,29 +105,14 @@ using namespace eosio;
 
          }
 
-         void add_rex_queue(asset input){
+         void add_to_eospool(asset input){
 
              poolstats pstatstable( get_self(), get_self().value );
              auto to = pstatstable.find( get_self().value );
 
              pstatstable.modify( to, get_self(), [&]( auto& a ) {
        
-             a.rex_queue = a.rex_queue + input;
-               
-             });
-
-         }
-
-         void add_queue_to_eospool(){
-
-             poolstats pstatstable( get_self(), get_self().value );
-             auto to = pstatstable.find( get_self().value );
-
-             pstatstable.modify( to, get_self(), [&]( auto& a ) {
-       
-               a.eospool = a.eospool + a.rex_queue;
-               a.rex_queue = asset(0, symbol("EOS", 4));
-               a.lastdeposit = current_time_point().sec_since_epoch();
+               a.eospool = a.eospool + input;
             });
 
          }
@@ -188,7 +164,6 @@ using namespace eosio;
            
             name     contract;
             asset    resevoir;//eos from voter rewards reserved for unstakers for 24 hours, need to stay liquid in case unstaked ECPU becomes staked and delegated
-            asset    rex_queue;//eos from mining which will be queued to enter rex every hour
             int      lastdeposit;//time of last deposit of above mining income rex queue 
             asset    eospool; //total initial eos entered into rex
 

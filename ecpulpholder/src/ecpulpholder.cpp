@@ -24,8 +24,7 @@ void ecpulpholder::setproxy( const name& contract, name proxy, name sender){
 }
 
 
-void ecpulpholder::setpool( asset resevoir, asset rex_queue, asset eospool, asset lastpay){//initialization and manual reset
-
+void ecpulpholder::setpool( asset resevoir, asset eospool, asset lastpay){//initialization and manual reset
 
 require_auth(get_self());
    
@@ -35,10 +34,8 @@ require_auth(get_self());
       pstatstable.emplace( get_self(), [&]( auto& a ){
         
         a.resevoir = asset(0, symbol("EOS", 4));
-        a.rex_queue = asset(0, symbol("EOS", 4));
         a.eospool = asset(0, symbol("EOS", 4));
         a.lastdeposit = current_time_point().sec_since_epoch();
-
         a.lastdailypay =  asset(0, symbol("EOS", 4));
 
       });
@@ -48,7 +45,6 @@ require_auth(get_self());
       pstatstable.modify( to, get_self(), [&]( auto& a ) {
        
         a.resevoir = resevoir;
-        a.rex_queue = rex_queue;
         a.eospool = eospool;
         a.lastdeposit = current_time_point().sec_since_epoch();
         a.lastdailypay =  lastpay;
@@ -103,22 +99,15 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
    
    if(memo == "mine income for permanent pool"){
 
-         //add to rex_queue, if 1 hour has passed since last addition to REX from mining pool income, then send to rex
-         add_rex_queue(quantity);
-         if (current_time_point().sec_since_epoch() >= (get_last_rexqueue()+(60*60))){
-
-               deposit = get_rex_queue();
+  
                
-               action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-               std::make_tuple(get_self(), proxy, name{""})).send();
+      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+      std::make_tuple(get_self(), proxy, name{""})).send();
 
-               action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-               std::make_tuple(get_self(), deposit)).send();
+      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+      std::make_tuple(get_self(), deposit)).send();
 
-               add_queue_to_eospool();
-         }
-
-         return;
+      add_to_eospool(quantity);
          
    }
    else if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
