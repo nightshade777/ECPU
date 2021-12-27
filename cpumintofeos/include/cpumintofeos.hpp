@@ -223,6 +223,13 @@ namespace eosio {
         });
 }
 
+    int get_last_deposit()
+         {
+            stats statstable( get_self(), get_self().value );
+            const auto& to = statstable.get( get_self().value );
+            return to.lastdeposit;
+    
+    }
 
       void mine(name from){
 
@@ -282,8 +289,9 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            int      prevmine;
-            int      creationtime;
+            int32_t  prevmine;
+            int32_t  creationtime;
+            int32_t  lastdeposit;//time of last deposit of above mining income rex queue 
             asset    totalstake;
             asset    totaldelegate;
 
@@ -295,7 +303,7 @@ namespace eosio {
             
             name     recipient;
             asset    cpupower;
-            int      delegatetime;
+            int32_t  delegatetime;
             
 
             uint64_t primary_key()const { return recipient.value; } 
@@ -305,7 +313,7 @@ namespace eosio {
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "delegates"_n, delegatecpu > delegates;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
-        // typedef eosio::multi_index< "stat"_n, currency_stats > statsov;
+        
 
 
          void sub_balance( const name& owner, const asset& value );

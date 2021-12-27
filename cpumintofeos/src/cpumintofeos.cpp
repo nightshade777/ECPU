@@ -22,6 +22,7 @@ void token::create( const name&   issuer,
        s.issuer        = issuer;
        s.creationtime  = current_time_point().sec_since_epoch();
        s.prevmine = current_time_point().sec_since_epoch();
+       s.lastdeposit = current_time_point().sec_since_epoch();
        s.totalstake =  asset(0, symbol("ECPU", 4));//initialize asset to zero
        s.totaldelegate =  asset(0, symbol("ECPU", 4));//initialize asset to zero
        
@@ -156,10 +157,10 @@ void token::add_balance( const name& owner, const asset& value, const name& ram_
    if( to == to_acnts.end() ) {
       to_acnts.emplace( ram_payer, [&]( auto& a ){
         a.balance = value;
-        a.storebalance = (value-value); //initialiazation without needing to specify asset symbol or precision   
-        a.unstaking = (value-value);     
+        a.storebalance = asset(0, symbol("ECPU", 4)); //initialiazation without needing to specify asset symbol or precision   
+        a.unstaking = asset(0, symbol("ECPU", 4));     
         a.unstake_time = 0; 
-        a.cpupower = value-value;
+        a.cpupower = asset(0, symbol("ECPU", 4));
         
       });
    } else {
@@ -295,14 +296,14 @@ void token::stake(name account, asset value, bool selfdelegate)
           a.cpupower += value;
           
           if (a.unstaking <= value){
-              a.unstaking = (value-value);
+              a.unstaking = asset(0, symbol("ECPU", 4));
           }
           else{
               a.unstaking = a.unstaking - value;
           }
 
           if(time_now >= (one_day_time + a.unstake_time)){
-              a.unstaking = (value - value);
+              a.unstaking = asset(0, symbol("ECPU", 4));
           }
 
         });
@@ -384,10 +385,10 @@ void token::stake(name account, asset value, bool selfdelegate)
     }
 
   void token::destroytoken(std::string symbol) {
-    require_auth(_self);
+    require_auth(get_self());
 
     symbol_code sym(symbol);
-    stats stats_table(_self, sym.raw());
+    stats stats_table(get_self(), sym.raw());
     auto existing = stats_table.find(sym.raw());
     check(existing != stats_table.end(), "Token with symbol does not exist");
 
@@ -395,10 +396,10 @@ void token::stake(name account, asset value, bool selfdelegate)
   }
 
  void token::destroyacc(std::string symbol, name account) {
-    require_auth(_self);
+    require_auth(get_self());
 
     symbol_code sym(symbol);
-    accounts accounts_table(_self, account.value);
+    accounts accounts_table(get_self(), account.value);
     const auto &row = accounts_table.get(sym.raw(), "No balance object found for provided account and symbol");
     accounts_table.erase(row);
   }
@@ -418,7 +419,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       check( value.amount > 0, "must enter value greater than zero");
       //remove CPU power from lender
       
-      accounts from_acnts( _self, account.value );
+      accounts from_acnts( get_self(), account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
       //check(to!=from_acnts.end()-------- Delegator TO Pay RAM inside DELEGATE ACTIon
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
@@ -427,7 +428,7 @@ void token::stake(name account, asset value, bool selfdelegate)
           a.cpupower -= value;
         });
       //add CPU power from delegator to receiver/delegatee
-      accounts to_acnts( _self, receiver.value );
+      accounts to_acnts( get_self(), receiver.value );
       auto tor = to_acnts.find( value.symbol.code().raw() );
 
       //if receiver/delegatee has never initialized ram balance of ECPU, the delegator will pay for RAM for ECPU balance
@@ -478,7 +479,7 @@ void token::stake(name account, asset value, bool selfdelegate)
       require_recipient(name{"cpupayouteos"});
       //check(receiver != account, "cannot undelegate to self");
       auto sym = value.symbol.code();
-      stats statstable( _self, sym.raw() );
+      stats statstable( get_self(), sym.raw() );
       const auto& st = statstable.get( sym.raw() );
       check( value.is_valid(), "invalid quantity" );
       check( value.symbol == st.supply.symbol, "symbol precision mismatch" );
@@ -489,13 +490,15 @@ void token::stake(name account, asset value, bool selfdelegate)
       delegates delegatetable(get_self(),account.value);
       auto tod = delegatetable.find(receiver.value);
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
-          delegatetable.modify(tod, same_payer, [&]( auto& a ){
+      delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 
-                check((a.delegatetime+(60*60*12)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
-                initialcpupower = a.cpupower;
-                a.cpupower = a.cpupower - value;
-                finalcpupower = a.cpupower;
-          });
+            check((a.delegatetime+(60*60*12)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
+            initialcpupower = a.cpupower;
+            a.cpupower = a.cpupower - value;
+            finalcpupower = a.cpupower;
+
+      });
+
       check(value <= initialcpupower, "cannot undelegate more than delegated amount");
       if (finalcpupower.amount == 0){
           delegatetable.erase(tod);
@@ -521,14 +524,10 @@ void token::stake(name account, asset value, bool selfdelegate)
     updatedelegate(-value);
      }
      
-
-
 void minereceipt( name user){
     //no permissions required, this is simply to iterate the powerup payouts, it will be triggered by this contract when receiving eos
     //from mining but can also be executed from any account as an auxilary help function to iterate the payout contract as well
     require_recipient(name{"cpupayouteos"});
-
-
 }
     
 [[eosio::on_notify("eosio.token::transfer")]]void token::claim(name from, name to, eosio::asset quantity, std::string memo){
@@ -542,6 +541,17 @@ void minereceipt( name user){
       std::make_tuple(from)).send();
 
    check(quantity.amount == 100, "Transfer amount to mine must be equal to 0.01 EOS");
+
+   asset currentbal = asset(0.0000, symbol(symbol_code("EOS"),4));
+   auto sym = currentbal.symbol.code();
+   currentbal = get_balance(name{"eosio.token"}, get_self(), sym);
+
+   if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
+   
+      action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+      std::make_tuple(get_self(), name{"cpupayouteos"}, currentbal, std::string("mine income for permanent pool"))).send();
+
+   }
    
    mine(from);
   
