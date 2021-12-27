@@ -6,8 +6,7 @@ Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management Syste
 ![image](https://user-images.githubusercontent.com/51843516/147264651-39f0aeb4-33f1-4f49-82f6-d186f1601d80.png)
 
 
-
-Contract Division of Functions:
+DIVISION OF CONTRACT FUNCTIONS
 
 **cpumintofeos**: handles ECPU mining code, receives eos from mining and distributes to ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanent REX pool every hour
 
