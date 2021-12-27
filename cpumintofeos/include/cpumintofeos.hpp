@@ -280,7 +280,7 @@ namespace eosio {
             asset    storebalance; //transfer blocker var, total ecpu locked
             asset    cpupower; //ecpu staked to bal (includes staked from others)
             asset    unstaking;
-            uint32_t unstake_time;
+            int32_t unstake_time;
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
