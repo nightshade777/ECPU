@@ -34,10 +34,10 @@ require_auth(get_self());
       pstatstable.emplace( get_self(), [&]( auto& a ){
         
         a.contract = get_self();
-        a.resevoir = asset(0, symbol("EOS", 4));
-        a.eospool = asset(0, symbol("EOS", 4));
+        a.resevoir = resevoir;
+        a.eospool = eospool;
         a.lastdeposit = current_time_point().sec_since_epoch();
-        a.lastdailypay =  asset(0, symbol("EOS", 4));
+        a.lastdailypay =  lastpay;
 
       });
    }
