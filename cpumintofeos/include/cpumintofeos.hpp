@@ -213,10 +213,10 @@ namespace eosio {
         asset balance = get_balance(get_self(),get_self(), symbol_code("ECPU"));
 
     
-        if (elapsedpm > 180){ //if 3 minutes have passed since last mining event, issue a 1 new mining reward, dont issue for dead spaces
+        if (elapsedpm > 180){ //if 3 minutes have passed since last mining event, issue a 1 new mining reward, round down to whole number rewards
       
             int rewardcount =  elapsedpm / 180;
-            asset issue =  rewardcount * asset(10000, symbol("CPU", 4));
+            asset issue =  rewardcount * asset(10000, symbol("ECPU", 4));
 
             action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "issue"_n, 
             std::make_tuple(get_self(), issue, std::string("issue new ECPU rewards"))).send();
