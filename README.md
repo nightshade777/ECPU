@@ -26,7 +26,7 @@ Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management Syste
 
 ECPU is aiming to take the next step to abstract away CPU and NET for users on the EOS mainnet, while also adding deflationary pressure to EOS by locking EOS into REX permanently. 
 
-Staking ECPU allows you to receive powerups automatically every 12 hours.p You can also delegate your ECPU to multiple accounts. This allows for a seemless experience for users with delegated ECPU and can be integrated in a wallet agnostic manner. 
+Staking ECPU allows you to receive powerups automatically every 12 hours. You can also delegate your ECPU to multiple accounts. This allows for a seemless experience for users with delegated ECPU and can be integrated in a wallet agnostic manner. 
 
 
 The powerups are funded by stake rewards received by the eos pool permanently staked to Rex. The EOS corrresponding to unstaked/undelegated ECPU resides in a reservoir pool that will be reserved in case a user delegates mid-round, and this unused reservoir will be reinvested into the permanent Rex pool at the end of the round.
