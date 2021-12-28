@@ -78,7 +78,7 @@ namespace eosio {
 
 
          [[eosio::action]] 
-         void destroyacc(std::string symbol, name account);
+         void destroyacc(asset token, name account);
 
          [[eosio::action]] 
          void minereceipt( name user);
@@ -138,22 +138,10 @@ namespace eosio {
             return ac.cpupower;
          }
 
-         
-         int get_stake_fraction(name user){
-
-            asset supply  = get_supply(get_self(), symbol_code("ECPU"));
-            asset cpu_staked = get_cpupower_balance(get_self(), user, symbol_code("ECPU"));
-
-            int stakefraction = ((cpu_staked.amount * 1000000) / supply.amount);
-
-            return stakefraction;
-
-         }
-
          bool check_cpu_balance(name user ){
             
             
-            asset assetname = asset(0, symbol("ECPU", 4));
+            asset assetname = asset(0, symbol("ECPU", 8));
 
             auto sym_code = assetname.symbol.code();
 
@@ -195,7 +183,7 @@ namespace eosio {
 
     uint32_t get_last_deposit()
          {
-            asset quantity = asset(0, symbol("ECPU", 4));
+            asset quantity = asset(0, symbol("ECPU", 8));
             auto sym = quantity.symbol;
       
             stats statstable( get_self(), sym.code().raw() );
@@ -216,7 +204,7 @@ namespace eosio {
         if (elapsedpm > 180){ //if 3 minutes have passed since last mining event, issue a 1 new mining reward, round down to whole number rewards
       
             int rewardcount =  elapsedpm / 180;
-            asset issue =  rewardcount * asset(10000, symbol("ECPU", 4));
+            asset issue =  rewardcount * asset(100000000, symbol("ECPU", 8));
 
             action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "issue"_n, 
             std::make_tuple(get_self(), issue, std::string("issue new ECPU rewards"))).send();

@@ -146,8 +146,8 @@
             "base": "",
             "fields": [
                 {
-                    "name": "symbol",
-                    "type": "string"
+                    "name": "token",
+                    "type": "asset"
                 },
                 {
                     "name": "account",

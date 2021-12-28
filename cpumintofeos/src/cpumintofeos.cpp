@@ -23,8 +23,8 @@ void token::create( const name&   issuer,
        s.creationtime  = current_time_point().sec_since_epoch();
        s.prevmine = current_time_point().sec_since_epoch();
        s.lastdeposit = current_time_point().sec_since_epoch();
-       s.totalstake =  asset(0, symbol("ECPU", 4));//initialize asset to zero
-       s.totaldelegate =  asset(0, symbol("ECPU", 4));//initialize asset to zero
+       s.totalstake =  asset(0, symbol("ECPU", 8));//initialize asset to zero
+       s.totaldelegate =  asset(0, symbol("ECPU", 8));//initialize asset to zero
        
     });
 }
@@ -116,7 +116,7 @@ void token::sub_balance( const name& owner, const asset& value ) {
     it blocks transacting with stored balance and balances that are undergoing the three day clear period
     **/
     uint32_t time_now = current_time_point().sec_since_epoch();
-    uint32_t one_day_time = 60*60*24;//1 days in seconds
+    uint32_t one_day_time = 60*60*24;//1 day in seconds
    
    
    //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
@@ -157,10 +157,10 @@ void token::add_balance( const name& owner, const asset& value, const name& ram_
    if( to == to_acnts.end() ) {
       to_acnts.emplace( ram_payer, [&]( auto& a ){
         a.balance = value;
-        a.storebalance = asset(0, symbol("ECPU", 4));   
-        a.unstaking = asset(0, symbol("ECPU", 4));     
+        a.storebalance = asset(0, symbol("ECPU", 8));   
+        a.unstaking = asset(0, symbol("ECPU", 8));     
         a.unstake_time = 0; 
-        a.cpupower = asset(0, symbol("ECPU", 4));
+        a.cpupower = asset(0, symbol("ECPU", 8));
         
       });
    } else {
@@ -198,7 +198,7 @@ void token::open2(name user)
 {
         require_auth(user);
 
-        asset cpu = asset(0, symbol("ECPU", 4));
+        asset cpu = asset(0, symbol("ECPU", 8));
        
         auto sym = cpu.symbol.code();
 
@@ -224,7 +224,7 @@ void token::open3(name user, name recipient)
 {
         require_auth(user);
 
-        asset cpu = asset(0, symbol("CPU", 4));
+        asset cpu = asset(0, symbol("ECPU", 8));
        
         auto sym = cpu.symbol.code();
 
@@ -296,14 +296,14 @@ void token::stake(name account, asset value)
           a.cpupower += value;
           
           if (a.unstaking <= value){
-              a.unstaking = asset(0, symbol("ECPU", 4));
+              a.unstaking = asset(0, symbol("ECPU", 8));
           }
           else{
               a.unstaking = a.unstaking - value;
           }
 
           if(time_now >= (one_day_time + a.unstake_time)){
-              a.unstaking = asset(0, symbol("ECPU", 4));
+              a.unstaking = asset(0, symbol("ECPU", 8));
           }
 
         });
@@ -407,10 +407,10 @@ void token::stake(name account, asset value)
       //if receiver/delegatee has never initialized ram balance of ECPU, the delegator will pay for RAM for ECPU balance
       if( tor == to_acnts.end() ) {
             to_acnts.emplace( account, [&]( auto& a ){
-                a.balance = asset(0, symbol("ECPU", 4));
-                a.storebalance = asset(0, symbol("ECPU", 4));
-                a.cpupower = asset(0, symbol("ECPU", 4));   
-                a.unstaking = asset(0, symbol("ECPU", 4));   
+                a.balance = asset(0, symbol("ECPU", 8));
+                a.storebalance = asset(0, symbol("ECPU", 8));
+                a.cpupower = asset(0, symbol("ECPU", 8));   
+                a.unstaking = asset(0, symbol("ECPU", 8));   
                 a.unstake_time = 0;
             });
         }
@@ -516,12 +516,12 @@ void token::destroytoken(asset token) {
 
   }
 
- void token::destroyacc(std::string symbol, name account) {
+ void token::destroyacc(asset token, name account) {
     require_auth(get_self());
 
-    symbol_code sym(symbol);
+    auto sym = token.symbol;
     accounts accounts_table(get_self(), account.value);
-    const auto &row = accounts_table.get(sym.raw(), "No balance object found for provided account and symbol");
+    const auto &row = accounts_table.get(sym.code().raw(), "No balance object found for provided account and symbol");
     accounts_table.erase(row);
   }
      
@@ -544,8 +544,8 @@ void token::minereceipt( name user){
    check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
    
-   //asset currentbal =  asset(0, symbol("EOS", 4));
-   //asset eos = asset(1, symbol("EOS", 4));
+   //asset currentbal =  asset(0, symbol("EOS", 8));
+   //asset eos = asset(1, symbol("EOS", 8));
    //asset balance = get_balance( name{"eosio.token"}, get_self(), eos.symbol.code());
 
 
@@ -556,8 +556,8 @@ void token::minereceipt( name user){
 
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
    
-      //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-     // std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string("mine income for permanent pool"))).send();
+       //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+       //std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string("EOS for permanent pool"))).send();
 
    }
    
