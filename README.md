@@ -2,8 +2,8 @@
 Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS
 
 
+![image](https://user-images.githubusercontent.com/51843516/147585332-a0b4560c-ac6b-4ba2-bc12-2ec5c386b3ac.png)
 
-![image](https://user-images.githubusercontent.com/51843516/147264651-39f0aeb4-33f1-4f49-82f6-d186f1601d80.png)
 
 
 **DIVISION OF CONTRACT FUNCTIONS**
