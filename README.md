@@ -1,5 +1,5 @@
 # ECPU
-Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS
+Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS, powered by deflationary EOS mining 
 
 
 ![image](https://user-images.githubusercontent.com/51843516/147585332-a0b4560c-ac6b-4ba2-bc12-2ec5c386b3ac.png)
