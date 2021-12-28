@@ -207,13 +207,12 @@ namespace eosio {
             asset issue =  rewardcount * asset(100000000, symbol("ECPU", 8));
 
             action(permission_level{_self, "active"_n}, "cpumintofeos"_n, "issue"_n, 
-            std::make_tuple(get_self(), issue, std::string("issue new ECPU rewards"))).send();
+            std::make_tuple(get_self(), issue, std::string("Issue ECPU Inflation"))).send();
 
             balance = balance + issue;
 
             stats statstable( get_self(), symbol_code("ECPU").raw() );
             auto existing = statstable.find( symbol_code("ECPU").raw() );
-            check( existing != statstable.end(), "token with symbol does not exist" );
             const auto& st = *existing;
 
             statstable.modify( st, same_payer, [&]( auto& s ) {
@@ -221,7 +220,7 @@ namespace eosio {
             });
 
           }
-            std::string minemessage = "ECPU mining Rewards";
+            std::string minemessage = "ECPU Mining Rewards";
 
             balance = balance/10000;
       
