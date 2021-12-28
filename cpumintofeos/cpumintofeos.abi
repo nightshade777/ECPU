@@ -30,6 +30,16 @@
             ]
         },
         {
+            "name": "accounteos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "close",
             "base": "",
             "fields": [
@@ -394,6 +404,13 @@
         }
     ],
     "tables": [
+        {
+            "name": "accounteos",
+            "type": "accounteos",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "accounts",
             "type": "account",

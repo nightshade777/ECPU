@@ -545,14 +545,21 @@ void token::minereceipt( name user){
          return;
    }
 
-   action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
-      std::make_tuple(from)).send();
+  // action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
+    //  std::make_tuple(from)).send();
 
    check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
-   asset currentbal = asset(0.0000, symbol(symbol_code("EOS"),4));
-   auto sym = currentbal.symbol.code();
-   currentbal = get_balance(name{"eosio.token"}, get_self(), sym);
+   
+   //asset currentbal =  asset(0, symbol("EOS", 4));
+   //asset eos = asset(1, symbol("EOS", 4));
+   //asset balance = get_balance( name{"eosio.token"}, get_self(), eos.symbol.code());
+
+
+   //auto sym = quantity.symbol.code();
+   asset currentbal = get_balance_eos(name{"eosio.token"}, name{"cpumintofeos"}, symbol_code("EOS")); 
+
+   //check(1!=1, "code got here 558");
 
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
    

@@ -116,6 +116,13 @@ namespace eosio {
             const auto& ac = accountstable.get( sym_code.raw() );
             return ac.balance;
          }
+
+         static asset get_balance_eos( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         {
+            accountseos accountstable( token_contract_account, owner.value );
+            const auto& ac = accountstable.get( sym_code.raw() );
+            return ac.balance;
+         }
          
          static asset get_stored_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
          {
@@ -188,8 +195,11 @@ namespace eosio {
 
     uint32_t get_last_deposit()
          {
-            stats statstable( get_self(), get_self().value );
-            const auto& to = statstable.get( get_self().value );
+            asset quantity = asset(0, symbol("ECPU", 4));
+            auto sym = quantity.symbol;
+      
+            stats statstable( get_self(), sym.code().raw() );
+            const auto& to = statstable.get( sym.code().raw() );
             return to.lastdeposit;
             
     
@@ -197,7 +207,9 @@ namespace eosio {
 
       void mine(name from){
 
+
         uint32_t elapsedpm = current_time_point().sec_since_epoch() - get_prevmine(get_self(), symbol_code("ECPU"));
+        
         asset balance = get_balance(get_self(),get_self(), symbol_code("ECPU"));
 
     
@@ -248,6 +260,14 @@ namespace eosio {
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
 
+         struct [[eosio::table]] accounteos {
+            asset    balance;
+            
+            uint64_t primary_key()const { return balance.symbol.code().raw(); }
+         };
+  
+        
+
          struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
@@ -274,6 +294,7 @@ namespace eosio {
 
 
          typedef eosio::multi_index< "accounts"_n, account > accounts;
+         typedef eosio::multi_index< "accounts"_n, accounteos > accountseos;
          typedef eosio::multi_index< "delegates"_n, delegatecpu > delegates;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
         
