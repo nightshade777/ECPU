@@ -17,7 +17,7 @@ using namespace eosio;
          using contract::contract;
 
          [[eosio::action]]
-         void setproxy( const name& contract, name proxy, name sender);
+         void setproxy(name proxy, name sender);
 
          [[eosio::action]]
          void setpool(asset resevoir, asset eospool, asset lastpay);

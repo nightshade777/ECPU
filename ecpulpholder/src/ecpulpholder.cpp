@@ -2,15 +2,15 @@
 
 #include <ecpulpholder.hpp>
 
-void ecpulpholder::setproxy( const name& contract, name proxy, name sender){
+void ecpulpholder::setproxy(name proxy, name sender){
    
    require_auth(get_self());
    
    proxies to_proxy( get_self(), get_self().value );
-   auto to = to_proxy.find( contract.value );
+   auto to = to_proxy.find( get_self().value );
    if( to == to_proxy.end() ) {
       to_proxy.emplace( get_self(), [&]( auto& a ){
-        a.contract = contract;
+        a.contract = get_self();
         a.proxy = proxy;
         a.eossender = sender;
       });
@@ -33,6 +33,7 @@ require_auth(get_self());
    if( to == pstatstable.end() ) {
       pstatstable.emplace( get_self(), [&]( auto& a ){
         
+        a.contract = get_self();
         a.resevoir = asset(0, symbol("EOS", 4));
         a.eospool = asset(0, symbol("EOS", 4));
         a.lastdeposit = current_time_point().sec_since_epoch();
@@ -50,6 +51,16 @@ require_auth(get_self());
         a.lastdailypay =  lastpay;
       
       });
+
+      name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
+
+      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+               std::make_tuple(get_self(), proxy, name{""})).send();
+
+      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+               std::make_tuple(get_self(), eospool)).send();
+      
+
    }
 }
 

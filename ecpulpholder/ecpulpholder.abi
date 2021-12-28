@@ -110,10 +110,6 @@
             "base": "",
             "fields": [
                 {
-                    "name": "contract",
-                    "type": "name"
-                },
-                {
                     "name": "proxy",
                     "type": "name"
                 },
