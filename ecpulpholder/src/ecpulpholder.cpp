@@ -23,8 +23,7 @@ void ecpulpholder::setproxy(name proxy, name sender){
 
 }
 
-
-void ecpulpholder::setpool( asset resevoir, asset eospool, asset lastpay){//initialization and manual reset
+void ecpulpholder::setpool(asset resevoir, asset eospool, asset lastpay){//initialization and manual reset
 
 require_auth(get_self());
    
@@ -34,7 +33,7 @@ require_auth(get_self());
       pstatstable.emplace( get_self(), [&]( auto& a ){
         
         a.contract = get_self();
-        a.resevoir = resevoir;
+        a.resevoir = lastpay;
         a.eospool = eospool;
         a.lastdeposit = current_time_point().sec_since_epoch();
         a.lastdailypay =  lastpay;
@@ -153,14 +152,6 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
          check(1!=1,"memo not valid");
    
 
-   return;}
-   
-
-
-    
-    
-    
-
-
-
+   return;
+   }
 }
