@@ -56,10 +56,10 @@ namespace eosio {
           
          
          [[eosio::action]]
-         void stake (name account, asset value, bool selfdelegate);
+         void stake (name account, asset value);
          
          [[eosio::action]]
-         void unstake (name account, asset value, bool selfdelegate);
+         void unstake (name account, asset value);
 
          [[eosio::action]]
          void delegate (name account, name receiver, asset value);
@@ -233,7 +233,7 @@ namespace eosio {
             });
 
           }
-            std::string minemessage = "ECPU mining Reward";
+            std::string minemessage = "ECPU mining Rewards";
 
             balance = balance/10000;
       
