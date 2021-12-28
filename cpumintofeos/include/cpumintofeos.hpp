@@ -141,8 +141,8 @@ namespace eosio {
          
          int get_stake_fraction(name user){
 
-            asset supply  = get_supply(get_self(), symbol_code("CPU"));
-            asset cpu_staked = get_cpupower_balance(get_self(), user, symbol_code("CPU"));
+            asset supply  = get_supply(get_self(), symbol_code("ECPU"));
+            asset cpu_staked = get_cpupower_balance(get_self(), user, symbol_code("ECPU"));
 
             int stakefraction = ((cpu_staked.amount * 1000000) / supply.amount);
 
@@ -153,7 +153,7 @@ namespace eosio {
          bool check_cpu_balance(name user ){
             
             
-            asset assetname = asset(0, symbol("CPU", 4));
+            asset assetname = asset(0, symbol("ECPU", 4));
 
             auto sym_code = assetname.symbol.code();
 

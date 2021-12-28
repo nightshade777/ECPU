@@ -413,7 +413,11 @@ void token::stake(name account, asset value, bool selfdelegate)
   }
   
   void token::delegate (name account, name receiver, asset value){
-      require_auth(account);
+      
+      if( get_self() != name{"cpumintofeos"}){
+      
+          require_auth(account);
+      }
 
       require_recipient(receiver);
       require_recipient(name{"cpupayouteos"});
@@ -482,7 +486,11 @@ void token::stake(name account, asset value, bool selfdelegate)
   }
   void token::undelegate (name account, name receiver, asset value){
       
-      require_auth(account);
+      if( get_self() != name{"cpumintofeos"}){
+      
+          require_auth(account);
+      }
+      
       require_recipient(receiver);
       require_recipient(name{"cpupayouteos"});
       //check(receiver != account, "cannot undelegate to self");
@@ -564,7 +572,7 @@ void token::minereceipt( name user){
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
    
       //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-     // std::make_tuple(get_self(), name{"cpupayouteos"}, currentbal, std::string("mine income for permanent pool"))).send();
+     // std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string("mine income for permanent pool"))).send();
 
    }
    
