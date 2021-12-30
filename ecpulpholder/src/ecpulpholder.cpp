@@ -120,28 +120,34 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
          action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
                std::make_tuple(get_self(), proxy, name{""})).send();
 
-         action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-               std::make_tuple(get_self(), resevoir)).send();
+         if (resevoir.amount != 0){
+
+                  action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+                     std::make_tuple(get_self(), resevoir)).send();
+         }
          
          void clear_resevoir();
          set_last_daily_pay(quantity);
 
          // send stake/supply* received to iteration contract
          asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code()); //find total supply of ECPU 
-         asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
+         asset ecpu_dstake = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
          asset powerup = quantity; //initialization 
-         powerup = (double(ecpustake.amount))/(double(ecpusupply.amount))*quantity; //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
+         powerup = quantity*(double(ecpu_dstake.amount))/(double(ecpusupply.amount)); //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
          
-         check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
+         check(ecpu_dstake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
          check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
          
          resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
 
          add_resevoir(resevoir);// update resevoir
 
-         action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-               std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string(""))).send();
-   }
+         if (powerup.amount != 0){
+        
+               action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+                     std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string(""))).send();
+         } 
+      }
    
    else if(memo == ""){ //no memo is for permanent burn case, locked into REX forever
 
