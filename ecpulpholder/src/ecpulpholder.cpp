@@ -91,10 +91,9 @@ void ecpulpholder::setdelegate(name account, asset receiver, asset value){
 [[eosio::on_notify("eosio.token::transfer")]]
 void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::string memo){
 //three types of eos being received, mining income, voting income, and LP income
-   name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
-   name proxy_sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
-   asset deposit;
-
+  
+   
+   //standard cases to ignore below
    if (to != get_self()){
         return;
    }
@@ -107,20 +106,11 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
         return;
    }
    
-   if(memo == "EOS for permanent pool"){
+   name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
+   name proxy_sender = get_eossender(name{"ecpulpholder"});//get expected reward sending-account
 
-  
-               
-      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-      std::make_tuple(get_self(), proxy, name{""})).send();
 
-      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-      std::make_tuple(get_self(), deposit)).send();
-
-      add_to_eospool(quantity);
-         
-   }
-   else if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
+   if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
    //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
          asset resevoir = get_resevoir();//get powerup pool reserved for undelegated ECPU
 
@@ -149,9 +139,26 @@ check(1!=1,"code got here");
          action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
                std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string(""))).send();
    }
+   
+   else if(memo == ""){ //no memo is for permanent burn case, locked into REX forever
+
+  
+               
+      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+      std::make_tuple(get_self(), proxy, name{""})).send();
+
+      check(1!=1, "code got here");
+
+      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+      std::make_tuple(get_self(), quantity)).send();
+
+      add_to_eospool(quantity);
+         
+   }
+   
    else{ 
 
-         check(1!=1,"memo not valid");
+         check(1!=1,"memo not valid, send with no memo to lock into REX forver");
    
 
    return;
