@@ -2,7 +2,9 @@
 
 
 [[eosio::action]] 
-void cpupayouteos::initialize(name contract, asset totalstaked){
+void cpupayouteos::initialize(name contract){
+
+//TO DO delete tables if existing and re-emplace
 
       require_auth(get_self());
 
@@ -12,10 +14,10 @@ void cpupayouteos::initialize(name contract, asset totalstaked){
       queuetable.emplace( get_self(), [&]( auto& s ) {
       
             s.contract = name{"cpupayouteos"};
-            s.currentpayee = name{"therealgavin"};
+            s.currentpayee = name{"ddctesterxcr"};
             s.remainingpay_ecpu = asset(0, symbol("EOS", 4)); 
-            s.startpay_ecpu = asset(0, symbol("EOS", 4));
-            s.stakestart = totalstaked; 
+            s.startpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS")); 
+            s.stakestart = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
             s.payoutstarttime = current_time_point().sec_since_epoch();
                   
       });
@@ -26,11 +28,13 @@ void cpupayouteos::initialize(name contract, asset totalstaked){
       globalstake.emplace( get_self(), [&]( auto& s ) {
 
             s.contract = name{"cpupayouteos"};
-            s.totaldelstaked = asset(0, symbol("ECPU", 4));
+            s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
 
       });
 
 }
+
+
 
 [[eosio::action]]
 void cpupayouteos::resetround(name contract){
@@ -121,7 +125,7 @@ void cpupayouteos::intdelegatee(name user){
  [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::cpupowerup(name user){
 
     
-
+     check(1!=1, "code got here");
     //1 get current payee
     name payee = get_current_payee();
     //2 see if payee stake time is after start of payout round

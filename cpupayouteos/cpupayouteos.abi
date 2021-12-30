@@ -64,6 +64,10 @@
                     "type": "uint32"
                 },
                 {
+                    "name": "lastdeposit",
+                    "type": "uint32"
+                },
+                {
                     "name": "totalstake",
                     "type": "asset"
                 },
@@ -116,10 +120,6 @@
                 {
                     "name": "contract",
                     "type": "name"
-                },
-                {
-                    "name": "clubstaked",
-                    "type": "asset"
                 }
             ]
         },
@@ -211,13 +211,6 @@
             "key_types": []
         },
         {
-            "name": "currency_stats",
-            "type": "currency_stats",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
             "name": "delegatee",
             "type": "delegatee",
             "index_type": "i64",
@@ -234,6 +227,13 @@
         {
             "name": "queuetable",
             "type": "queuetable",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stat",
+            "type": "currency_stats",
             "index_type": "i64",
             "key_names": [],
             "key_types": []

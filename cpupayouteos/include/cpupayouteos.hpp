@@ -14,7 +14,7 @@ CONTRACT cpupayouteos : public contract {
 
     //initialize system-----------------------------
     [[eosio::action]] 
-    void initialize(name contract, asset clubstaked);
+    void initialize(name contract);
 
     [[eosio::action]]
     void resetround(name contract);
@@ -70,7 +70,7 @@ CONTRACT cpupayouteos : public contract {
       auto primary_key() const { return contract.value; }
 
     };
-    typedef multi_index<name("queuetable"), queuetable> queue_table;
+    
 
 
 
@@ -87,7 +87,7 @@ CONTRACT cpupayouteos : public contract {
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
   
-        typedef eosio::multi_index< "accounts"_n, account > accounts;
+        
 
         
         struct [[eosio::table]] accountg {
@@ -98,26 +98,39 @@ CONTRACT cpupayouteos : public contract {
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
   
-        typedef eosio::multi_index< "accounts"_n, accountg > accountsg;
+        
 
         struct [[eosio::table]] currency_stats {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            uint32_t      prevmine;
-            uint32_t      creationtime;
+            uint32_t  prevmine;
+            uint32_t  creationtime;
+            uint32_t  lastdeposit;
             asset    totalstake;
             asset    totaldelegate;
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
+         typedef eosio::multi_index<"queuetable"_n, queuetable> queue_table;
+         typedef eosio::multi_index< "accounts"_n, account > accounts;
+         typedef eosio::multi_index< "accounts"_n, accountg > accountsg; 
+         typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
-static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+
+static asset get_balance_eos( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
       {
-          accounts accountstable( token_contract_account, owner.value );
+          accountsg accountstable( token_contract_account, owner.value );
           const auto& ac = accountstable.get( sym_code.raw() );
           return ac.balance;
+      }
+
+static asset get_ecpu_delstake(const name& token_contract_account, const symbol_code& sym_code) // build struct from cpumintofeos account and pull total ecpu staked from table
+      {
+          stats statstable( token_contract_account, sym_code.raw() );
+          const auto& st = statstable.get( sym_code.raw() );
+          return st.totaldelegate;
       }
 
 
@@ -490,17 +503,6 @@ long double get_paying_ratio(){
 
   void update_global_unstake(name user, asset stakechange){
 
-    //CASE1 person with less than 777k unstakes, do nothing -> nothing
-    //CASE 2 person with 777k unstakes and still has > 777k -> modify stake club entry, modify global stake
-    //CASE 3 person with 777k unstakes and no longer has 777k ->delete stake club entry, modify global stake
-    //snapshot 1, internal stake club table (status and stake before the change) 
-    //snapshot 2 ecpu storedbalance table (real current stake value)
-
-   
-    //4 case four, person with 777k already staked who wasnt on list, unstakes some
-
-
-
     delegatees delegatee(get_self(), get_self().value);
     auto existing = delegatee.find(user.value);
     const auto& st = *existing;
@@ -530,7 +532,7 @@ long double get_paying_ratio(){
 
     if (existing == delegatee.end()){
 
-        return; //CASE 1 ADDRESSED HERE
+        return; 
 
     }
 
@@ -572,7 +574,7 @@ long double get_paying_ratio(){
         return ccs;
         **/
         
-        asset ccs = asset(0, symbol("ECPU", 4));
+        asset ccs = asset(0, symbol("ECPU", 8));
         
         
         delegatees delegatee(get_self(), get_self().value);
@@ -604,9 +606,7 @@ long double get_paying_ratio(){
 
 
   }
-
-
-
+  
   void set_ecpu_rpsp(){
 
         queue_table queuetable(get_self(), get_self().value);
@@ -614,16 +614,16 @@ long double get_paying_ratio(){
         check( existing != queuetable.end(), "contract table not deployed" );
         const auto& st = *existing;
 
-        asset currentbal = asset(0.0000, symbol(symbol_code("EOS"),4));
+        asset currentbal = asset(0, symbol(symbol_code("EOS"),4));
         auto sym = currentbal.symbol.code();
-        currentbal = get_balance(name{"eosio.token"}, get_self(), sym);
+        currentbal = get_balance_eos(name{"eosio.token"}, get_self(), sym);
 
       
         asset sp = currentbal/2;
 
                 queuetable.modify( st, same_payer, [&]( auto& s ) {
                     s.startpay_ecpu = sp;
-                    s.remainingpay_ecpu = asset(0.0000, symbol(symbol_code("EOS"),4));
+                    s.remainingpay_ecpu = asset(0, symbol(symbol_code("EOS"),4));
                 });
 
   }
