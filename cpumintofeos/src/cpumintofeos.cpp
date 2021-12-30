@@ -556,8 +556,8 @@ void token::minereceipt( name user){
 
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
    
-       //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-       //std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string("EOS for permanent pool"))).send();
+       action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+       std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string(""))).send();
 
    }
    
