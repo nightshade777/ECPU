@@ -131,11 +131,11 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
          asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
          asset powerup = quantity; //initialization 
          powerup = (double(ecpustake.amount))/(double(ecpusupply.amount))*quantity; //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
+         
          check(ecpustake < ecpusupply, "error stake shall always be < or equal to supply");// sanity check
          check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
-         resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
          
-check(1!=1,"code got here (line 138)");
+         resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
 
          add_resevoir(resevoir);// update resevoir
 
@@ -150,7 +150,7 @@ check(1!=1,"code got here (line 138)");
       action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
       std::make_tuple(get_self(), proxy, name{""})).send();
 
-      check(1!=1, "code got here  (line 153)");
+      //check(1!=1, "code got here  (line 153)");
 
       action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
       std::make_tuple(get_self(), quantity)).send();

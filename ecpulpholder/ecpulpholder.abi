@@ -31,14 +31,22 @@
                 },
                 {
                     "name": "prevmine",
-                    "type": "int32"
+                    "type": "uint32"
                 },
                 {
                     "name": "creationtime",
-                    "type": "int32"
+                    "type": "uint32"
+                },
+                {
+                    "name": "lastdeposit",
+                    "type": "uint32"
                 },
                 {
                     "name": "totalstake",
+                    "type": "asset"
+                },
+                {
+                    "name": "totaldelegate",
                     "type": "asset"
                 }
             ]

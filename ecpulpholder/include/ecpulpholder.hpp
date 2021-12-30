@@ -153,11 +153,13 @@ using namespace eosio;
             asset    supply;
             asset    max_supply;
             name     issuer;
-            int      prevmine;// var not used natively, utilized in order to pull from two different token contracts without requiring two structs
-            int      creationtime;//see above
-            asset    totalstake;//see above
-            uint64_t primary_key()const { return supply.symbol.code().raw(); }
+            uint32_t  prevmine;
+            uint32_t  creationtime;
+            uint32_t  lastdeposit;//time of last deposit of above mining income rex queue 
+            asset    totalstake;
+            asset    totaldelegate;
             
+            uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
          struct [[eosio::table]] pool_stats {
