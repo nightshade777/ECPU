@@ -135,7 +135,7 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
 
          // send stake/supply* received to iteration contract
          asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code()); //find total supply of ECPU 
-         ecpusupply = ecpusupply + asset(48000000000, symbol("ECPU", 8)); // find total supply of ECPU one day from now
+         ecpusupply = ecpusupply + asset(48000000000, symbol("ECPU", 8)); // find total supply of ECPU one day from now (adjustment needed or else newly minted ECPU being delegated can make resevoir go bankrupt)
          asset ecpu_dstake = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
          
          
