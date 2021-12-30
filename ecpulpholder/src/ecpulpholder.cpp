@@ -90,8 +90,10 @@ void ecpulpholder::setdelegate(name account, asset receiver, asset value){
 
 [[eosio::on_notify("eosio.token::transfer")]]
 void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::string memo){
-//three types of eos being received, mining income, voting income, and LP income
-  
+//two types of eos being received, mining income, and voting income
+      //-mining incoming EOS sent to be locked in REX forever, sends once an hour from cpumintofeos
+      //-staking incoming EOS used for powerups proportional to ECPU staked, the EOS corresponding to unstaked ECPU will be kept in resevoir
+         //untill next payment from rewards proxy
    
    //standard cases to ignore below
    if (to != get_self()){
@@ -111,7 +113,8 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
 
 
    if(from == proxy_sender){//in the case of receiving voting rewards from the proxy's reward sending account
-   //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
+         
+         //upon payment of vote rewards, place all current liquid eos (previous resevoir see below) into REX permanently 
          asset resevoir = get_resevoir();//get powerup pool reserved for undelegated ECPU
 
          action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
@@ -123,7 +126,7 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
          void clear_resevoir();
          set_last_daily_pay(quantity);
 
-   // send stake/supply* received to iteration contract
+         // send stake/supply* received to iteration contract
          asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code()); //find total supply of ECPU 
          asset ecpustake = get_ecpustake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
          asset powerup = quantity; //initialization 
@@ -132,7 +135,7 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
          check(powerup < quantity, "error powerup amount shall always be < than received quantity"); // sanity check
          resevoir = quantity - powerup; //liquid eos representing unstaked ECPU, will await in balance untill next cpu payment
          
-check(1!=1,"code got here");
+check(1!=1,"code got here (line 138)");
 
          add_resevoir(resevoir);// update resevoir
 
@@ -147,7 +150,7 @@ check(1!=1,"code got here");
       action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
       std::make_tuple(get_self(), proxy, name{""})).send();
 
-      check(1!=1, "code got here");
+      check(1!=1, "code got here  (line 153)");
 
       action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
       std::make_tuple(get_self(), quantity)).send();
