@@ -86,8 +86,8 @@ void ecpulpholder::setdelegate(name account, name receiver, asset value){
          
      powerup = (lastpay*double(value.amount)/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send
 
-     check(powerup.amount !=0, "ERROR Delegated ECPU amount corresponding to CPU/NET Rental is 0.0000 EOS, try delegating more ECPU");
-     check(powerup.amount >= 5, "Delegated ECPU amount corresponding to CPU/NET Rental must be greater than or equal to than 0.0005 EOS, try delegating more ECPU");
+     check(powerup.amount !=0, "ERROR EOS amount for CPU/NET Rental corresponding to delegated ECPU input for this action is 0.0000 EOS, try delegating more ECPU");
+     check(powerup.amount >= 5, "ERROR EOS amount for CPU/NET Rental corresponding to delegated ECPU input for this action is less than 0.0005 EOS, try delegating more ECPU");
     
      add_resevoir(-powerup);// update resevoir by removing this individual powerup
     
