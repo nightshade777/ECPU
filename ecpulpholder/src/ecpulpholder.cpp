@@ -39,6 +39,13 @@ require_auth(get_self());
         a.lastdailypay =  lastpay;
 
       });
+      name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
+
+      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
+               std::make_tuple(get_self(), proxy, name{""})).send();
+
+      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
+               std::make_tuple(get_self(), eospool)).send();
    }
    else{
 
@@ -51,13 +58,7 @@ require_auth(get_self());
       
       });
 
-      name proxy = get_proxy(name{"ecpulpholder"});//get voter proxy account
-
-      action(permission_level{_self, "active"_n}, "eosio"_n, "voteproducer"_n, 
-               std::make_tuple(get_self(), proxy, name{""})).send();
-
-      action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
-               std::make_tuple(get_self(), eospool)).send();
+      
       
 
    }
@@ -77,7 +78,7 @@ void ecpulpholder::setdelegate(name account, asset receiver, asset value){
      ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
      resevoir = get_resevoir();
          
-     powerup.amount = ((double(value.amount))/(double(ecpusupply.amount))/2)*lastpay.amount;//get half of alloted ECPU for day and send
+     powerup.amount = lastpay.amount*((double(value.amount))/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send
 
     //remove this powerup amout from resevoir
 
@@ -125,13 +126,19 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
                   action(permission_level{_self, "active"_n}, "eosio"_n, "deposit"_n, 
                      std::make_tuple(get_self(), resevoir)).send();
          }
+
+         add_to_eospool(resevoir); // move resevoir to permanent pool 
          
-         void clear_resevoir();
-         set_last_daily_pay(quantity);
+         clear_resevoir(); //clear resevoir
+
+         set_last_daily_pay(quantity); // set last received reward 
 
          // send stake/supply* received to iteration contract
          asset ecpusupply =get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code()); //find total supply of ECPU 
+         ecpusupply = ecpusupply + asset(48000000000, symbol("ECPU", 8)); // find total supply of ECPU one day from now
          asset ecpu_dstake = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
+         
+         
          asset powerup = quantity; //initialization 
          powerup = quantity*(double(ecpu_dstake.amount))/(double(ecpusupply.amount)); //find fraction of staked ECPU, unstaked ECPU allocation will be auto reinvested
          
