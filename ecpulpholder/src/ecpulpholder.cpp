@@ -65,27 +65,34 @@ require_auth(get_self());
 }
 
 [[eosio::on_notify("cpumintofeos::delegate")]] 
-void ecpulpholder::setdelegate(name account, asset receiver, asset value){
+void ecpulpholder::setdelegate(name account, name receiver, asset value){
 
      //if delegating in middle of round, send corresponding proportion from liquid resevoir and powerup account immediately
 
+     
      asset powerup = asset(0, symbol("EOS", 4)); //initiaize powerup with eos asset, change amount in next step
+     
      asset lastpay = get_last_daily_pay();
+     
      asset ecpusupply;
      asset resevoir;
 
     
      ecpusupply = get_supply(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+     ecpusupply = ecpusupply + asset(48000000000, symbol("ECPU", 8)); // find total supply of ECPU one day from now (adjustment needed or else newly minted ECPU being delegated can make resevoir go bankrupt)
      resevoir = get_resevoir();
+
+     
          
-     powerup.amount = lastpay.amount*((double(value.amount))/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send
+     powerup = (lastpay*double(value.amount)/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send
 
-    //remove this powerup amout from resevoir
-
-     add_resevoir(-powerup);// update resevoir
-
+     check(powerup.amount !=0, "ERROR Delegated ECPU amount corresponding to CPU/NET Rental is 0.0000 EOS, try delegating more ECPU");
+     check(powerup.amount >= 5, "Delegated ECPU amount corresponding to CPU/NET Rental must be greater than or equal to than 0.0005 EOS, try delegating more ECPU");
+    
+     add_resevoir(-powerup);// update resevoir by removing this individual powerup
+    
      action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-            std::make_tuple(get_self(), name{"powerupcalc1"}, powerup,receiver.to_string())).send();
+           std::make_tuple(get_self(), name{"powerupcalc1"}, powerup,receiver.to_string())).send();
      
 }
 

@@ -26,7 +26,7 @@ using namespace eosio;
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
 
          [[eosio::on_notify("cpumintofeos::delegate")]] 
-         void setdelegate(name account, asset receiver, asset value);
+         void setdelegate(name account, name receiver, asset value);
 
 
          name get_proxy(name contract)
