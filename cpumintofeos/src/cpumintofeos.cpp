@@ -271,9 +271,7 @@ void token::stake(name account, asset value)
       require_recipient(account);
 
       require_recipient(name{"cpumintofeos"});
-      require_recipient(name{"cpupayouteos"});
-
-    
+      
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
       const auto& st = statstable.get( sym.raw());
@@ -328,7 +326,6 @@ void token::stake(name account, asset value)
       require_auth(account);
       require_recipient(account);
       require_recipient(name{"cpumintofeos"});
-      require_recipient(name{"cpupayouteos"});
     
       auto sym = value.symbol.code();
       stats statstable( _self, sym.raw() );
@@ -357,7 +354,7 @@ void token::stake(name account, asset value)
           a.storebalance -= value;
           a.delegatepwr -= value;
           
-          check(a.delegatepwr.amount >= 0, "ECPU Power will become below zero. Must undelegate ECPU before unstake");
+          check(a.delegatepwr.amount >= 0, "ECPU Power will become below zero. Must undelegate ECPU before unstaking this amount.");
         
           if(time_now<= (one_day_time + a.unstake_time))
             {
@@ -384,7 +381,7 @@ void token::stake(name account, asset value)
       
 
       require_recipient(receiver);
-      //require_recipient(name{"ecpulpholder"});
+      require_recipient(name{"ecpulpholder"});
 
       //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
@@ -395,15 +392,21 @@ void token::stake(name account, asset value)
       check( value.symbol.is_valid(), "invalid symbol name" );
       check( value.amount > 0, "must enter value greater than zero");
       //remove CPU power from lender
+
       
+
       accounts from_acnts( get_self(), account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
+
+      
       //check(to!=from_acnts.end()-------- Delegator TO Pay RAM inside DELEGATE ACTIon
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          check((value <= a.delegatepwr ), "Cannot delegate more than your delegatepower");
+          check((value <= a.delegatepwr ), "Cannot delegate more than your remaining undelegated staked tokens");
           a.delegatepwr -= value;
         });
+
+        
       //add CPU power from delegator to receiver/delegatee
       accounts to_acnts( get_self(), receiver.value );
       auto tor = to_acnts.find( value.symbol.code().raw() );
@@ -415,16 +418,16 @@ void token::stake(name account, asset value)
                 a.balance = asset(0, symbol("ECPU", 8));
                 a.storebalance = asset(0, symbol("ECPU", 8));
                 a.delegatepwr = asset(0, symbol("ECPU", 8));
-                a.cpupower = asset(0, symbol("ECPU", 8));   
+                a.cpupower = value;   
                 a.unstaking = asset(0, symbol("ECPU", 8));   
                 a.unstake_time = 0;
             });
         }
-      
-    to_acnts.modify( tor, same_payer, [&]( auto& a ) 
-      {
-        a.cpupower += value;
-      });
+      else {
+            to_acnts.modify( tor, same_payer, [&]( auto& a ) {
+                a.cpupower += value;
+            });
+      }
       
       
       
@@ -458,7 +461,7 @@ void token::stake(name account, asset value)
       
       require_auth(account);
       //require_recipient(receiver);
-      //require_recipient(name{"ecpulpholder"});
+      require_recipient(name{"ecpulpholder"});
 
       uint32_t twelve_hours = 1;//60*60*12
 
