@@ -528,13 +528,19 @@ void token::destroytoken(asset token) {
 
   }
 
- void token::destroyacc(asset token, name account) {
-    require_auth(get_self());
+ void token::destroyacc(asset token, name account, name delegaterow) {
+    require_auth(account);
 
-    auto sym = token.symbol;
-    accounts accounts_table(get_self(), account.value);
-    const auto &row = accounts_table.get(sym.code().raw(), "No balance object found for provided account and symbol");
-    accounts_table.erase(row);
+    //auto sym = token.symbol;
+    //accounts accounts_table(get_self(), account.value);
+    //const auto &row = accounts_table.get(sym.code().raw(), "No balance object found for provided account and symbol");
+    //accounts_table.erase(row);
+
+
+    delegates delegatetable(get_self(), account.value);
+    auto tod = delegatetable.begin();
+    delegatetable.erase(tod);
+
   }
      
 void token::minereceipt( name user){

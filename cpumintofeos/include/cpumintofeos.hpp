@@ -78,7 +78,7 @@ namespace eosio {
 
 
          [[eosio::action]] 
-         void destroyacc(asset token, name account);
+         void destroyacc(asset token, name account, name delegaterow);
 
          [[eosio::action]] 
          void minereceipt( name user);

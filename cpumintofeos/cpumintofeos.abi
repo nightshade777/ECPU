@@ -156,6 +156,10 @@
                 {
                     "name": "account",
                     "type": "name"
+                },
+                {
+                    "name": "delegaterow",
+                    "type": "name"
                 }
             ]
         },
