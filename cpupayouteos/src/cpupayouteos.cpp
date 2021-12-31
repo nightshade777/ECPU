@@ -164,7 +164,8 @@ void cpupayouteos::intdelegatee(name user){
     
      //check(1!=1, "code got here");
 
-    uint32_t twelve_hours = 1; //
+    uint32_t twelve_hours = 1;
+    uint32_t one_day = 2; //
     //1 get current payee
     name payee = get_current_payee();
     //2 see if payee stake time is after start of payout round
@@ -172,11 +173,11 @@ void cpupayouteos::intdelegatee(name user){
     uint32_t userlastdelegate = get_user_delegatetime(payee);
     
     //has 12 hours past?, if not go to next payee and end action
-    if (userlastpaytime < current_time_point().sec_since_epoch(); + twelve_hours){
+    if (userlastpaytime > (current_time_point().sec_since_epoch() - twelve_hours)){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
-     else if (userlastdelegate < current_time_point().sec_since_epoch(); + twelve_hours){
+     else if (userlastdelegate > (current_time_point().sec_since_epoch() - one_day)){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
@@ -204,6 +205,15 @@ void cpupayouteos::intdelegatee(name user){
 
     set_next_round();
 
+    queue_table queuetable(get_self(), get_self().value);
+    auto existing = queuetable.find(get_self().value);
+
+    queuetable.modify( existing, get_self(), [&]( auto& s ){
+
+            s.remainingpay_ecpu = s.remainingpay_ecpu - powerup;
+
+    });
+
     
 
  }
@@ -221,6 +231,33 @@ void cpupayouteos::intdelegatee(name user){
 
       update_global_stake();
       update_delegatee(receiver, -value);
+
+}
+
+[[eosio::on_notify("eosio.token::transfer")]] void cpupayouteos::resetround(name from, name to, eosio::asset quantity, std::string memo){
+
+   if (to != get_self()) {
+
+         return;
+   }
+
+   if (from != name{"ecpulpholder"}){
+
+         return;
+   }
+   queue_table queuetable(get_self(), get_self().value);
+   auto existing = queuetable.find(get_self().value);
+
+   queuetable.modify( existing, get_self(), [&]( auto& s ){
+
+                  
+                  s.remainingpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS"));
+                  s.startpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS")); 
+                  s.payoutstarttime = current_time_point().sec_since_epoch();
+
+   });
+
+
 
 }
 

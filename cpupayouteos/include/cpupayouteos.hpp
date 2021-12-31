@@ -28,6 +28,7 @@ CONTRACT cpupayouteos : public contract {
     //listen to stake / unstake
     [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, name receiver, asset value);
     [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, name receiver, asset value);
+    [[eosio::on_notify("eosio.token::transfer")]] void resetround(name from, name to, eosio::asset quantity, std::string memo);
     
     
     TABLE delegatee { 
