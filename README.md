@@ -9,7 +9,7 @@ Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management Syste
 
 **DIVISION OF CONTRACT FUNCTIONS**
 
-**cpumintofeos**: is the ECPU token contract, handles ECPU mining code, receives eos from mining and distributes to the ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanent REX pool (ecpulpholder contract) every hour. Mining code utilizes the difficulty-adjusted algo from eidos but with 0.0010 EOS with no refund for spam reduction. 
+**cpumintofeos**: is the ECPU token contract, handles ECPU mining code, receives eos from mining and distributes to the ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked in the permanent REX pool (ecpulpholder contract) every hour. Mining code utilizes the difficulty-adjusted algo from eidos but with 0.0010 EOS with no refund for spam reduction. 
 
 **ecpulpholder**: holds the permanent pool, handles staking to rex, executes proxy vote action, receives stake rewards, and issues correct amount of eos to the cpupayouteos for CPU/NET distrubution for ECPU delegatees (proportion corresponding to unstaked ECPU remains liquid in a reserve which will be sent directly for rental purchase in the case of ECPU being delegated mid-round)
 
