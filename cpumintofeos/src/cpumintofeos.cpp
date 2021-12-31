@@ -160,6 +160,7 @@ void token::add_balance( const name& owner, const asset& value, const name& ram_
         a.storebalance = asset(0, symbol("ECPU", 8));   
         a.unstaking = asset(0, symbol("ECPU", 8));     
         a.unstake_time = 0; 
+        a.delegatepwr = asset(0, symbol("ECPU", 8));
         a.cpupower = asset(0, symbol("ECPU", 8));
         
       });
@@ -187,6 +188,7 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
       acnts.emplace( ram_payer, [&]( auto& a ){
         a.balance = asset{0, symbol};
         a.storebalance = a.balance;
+        a.delegatepwr = a.balance;
         a.cpupower = a.balance;    
         a.unstaking = a.balance;     
         a.unstake_time = 0;
@@ -210,6 +212,7 @@ void token::open2(name user)
             acnts.emplace( user, [&]( auto& a ){
                 a.balance = cpu;
                 a.storebalance = a.balance;
+                a.delegatepwr = a.balance;
                 a.cpupower = a.balance;    
                 a.unstaking = a.balance;     
                 a.unstake_time = 0;
@@ -236,6 +239,7 @@ void token::open3(name user, name recipient)
             acnts.emplace( user, [&]( auto& a ){
                 a.balance = cpu;
                 a.storebalance = a.balance;
+                a.delegatepwr = a.balance;
                 a.cpupower = a.balance;    
                 a.unstaking = a.balance;     
                 a.unstake_time = 0;
@@ -275,7 +279,7 @@ void token::stake(name account, asset value)
       const auto& st = statstable.get( sym.raw());
 
       uint32_t time_now = current_time_point().sec_since_epoch();
-      uint32_t one_day_time = 60*60*24;
+      uint32_t one_day_time = 1;
       
       //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
       //if (account == name{"chintailease"}){
@@ -293,7 +297,7 @@ void token::stake(name account, asset value)
         {
           eosio::check((value <= (a.balance-a.storebalance) ), "Cannot stake more than your unstaked balance");
           a.storebalance += value;
-          a.cpupower += value;
+          a.delegatepwr += value;
           
           if (a.unstaking <= value){
               a.unstaking = asset(0, symbol("ECPU", 8));
@@ -336,7 +340,7 @@ void token::stake(name account, asset value)
       check( value.symbol.is_valid(), "invalid symbol name" );
     
       uint32_t time_now = current_time_point().sec_since_epoch();
-      uint32_t one_day_time = 60*60*24;
+      uint32_t one_day_time = 1;
 
       //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
       //if (account == name{"chintailease"}){
@@ -351,8 +355,9 @@ void token::stake(name account, asset value)
         
           check((value <= a.storebalance  ), "Cannot unstake more than your staked balance");
           a.storebalance -= value;
-          a.cpupower -= value;
-          check(a.cpupower.amount >= 0, "ECPU Power will become below zero. Must undelegate ECPU before unstake");
+          a.delegatepwr -= value;
+          
+          check(a.delegatepwr.amount >= 0, "ECPU Power will become below zero. Must undelegate ECPU before unstake");
         
           if(time_now<= (one_day_time + a.unstake_time))
             {
@@ -379,7 +384,7 @@ void token::stake(name account, asset value)
       
 
       require_recipient(receiver);
-      ///require_recipient(name{"ecpulpholder"});
+      //require_recipient(name{"ecpulpholder"});
 
       //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
@@ -396,8 +401,8 @@ void token::stake(name account, asset value)
       //check(to!=from_acnts.end()-------- Delegator TO Pay RAM inside DELEGATE ACTIon
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          check((value <= a.cpupower ), "Cannot delegate more than your cpupower");
-          a.cpupower -= value;
+          check((value <= a.delegatepwr ), "Cannot delegate more than your delegatepower");
+          a.delegatepwr -= value;
         });
       //add CPU power from delegator to receiver/delegatee
       accounts to_acnts( get_self(), receiver.value );
@@ -409,18 +414,18 @@ void token::stake(name account, asset value)
             to_acnts.emplace( account, [&]( auto& a ){
                 a.balance = asset(0, symbol("ECPU", 8));
                 a.storebalance = asset(0, symbol("ECPU", 8));
+                a.delegatepwr = asset(0, symbol("ECPU", 8));
                 a.cpupower = asset(0, symbol("ECPU", 8));   
                 a.unstaking = asset(0, symbol("ECPU", 8));   
                 a.unstake_time = 0;
             });
         }
       
+    to_acnts.modify( tor, same_payer, [&]( auto& a ) 
+      {
+        a.cpupower += value;
+      });
       
-      
-      to_acnts.modify( tor, same_payer, [&]( auto& a ) 
-        {
-          a.cpupower += value;
-        });
       
       
       //add borrower to delegate table of lender
@@ -443,6 +448,7 @@ void token::stake(name account, asset value)
                 a.delegatetime = current_time_point().sec_since_epoch();
           });
       }
+     
       
       updatedelegate(value);
       
@@ -450,8 +456,11 @@ void token::stake(name account, asset value)
   }
   void token::undelegate (name account, name receiver, asset value){
       
-      require_recipient(receiver);
-      require_recipient(name{"ecpulpholder"});
+      require_auth(account);
+      //require_recipient(receiver);
+      //require_recipient(name{"ecpulpholder"});
+
+      uint32_t twelve_hours = 1;//60*60*12
 
       //check(receiver != account, "cannot undelegate to self");
       auto sym = value.symbol.code();
@@ -468,25 +477,25 @@ void token::stake(name account, asset value)
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
       delegatetable.modify(tod, same_payer, [&]( auto& a ){
                 
-            check((a.delegatetime+(60*60*12)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
+            check((a.delegatetime+(twelve_hours)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
             initialcpupower = a.cpupower;
             a.cpupower = a.cpupower - value;
             finalcpupower = a.cpupower;
 
       });
 
-      check(value <= initialcpupower, "cannot undelegate more than delegated amount");
+      check(value <= initialcpupower, "cannot undelegate more than current delegated amount");
       if (finalcpupower.amount == 0){
           delegatetable.erase(tod);
       }
-      //add cpu power to lender
+      //add delegate power back to oringinal lender
       
       accounts from_acnts( _self, account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
    
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          a.cpupower += value;
+          a.delegatepwr += value;
         });
       
       //remove cpu power from borrower 

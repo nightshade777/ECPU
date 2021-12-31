@@ -131,6 +131,13 @@ namespace eosio {
             return ac.storebalance;
          }
          
+         static asset get_delpower_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         {
+            accounts accountstable( token_contract_account, owner.value );
+            const auto& ac = accountstable.get( sym_code.raw() );
+            return ac.delegatepwr;
+         }
+         
          static asset get_cpupower_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
          {
             accounts accountstable( token_contract_account, owner.value );
@@ -239,7 +246,8 @@ namespace eosio {
       
          struct [[eosio::table]] account {
             asset    balance;
-            asset    storebalance; //transfer blocker var, total ecpu locked
+            asset    storebalance; //balance of staked tokens, this is a transfer blocker variable representing total ecpu locked
+            asset    delegatepwr; //balance of staked tokens able to be delegated, max is the number of tokens staked, converted to cpupower upon delegation
             asset    cpupower; //ecpu staked to bal (includes staked from others)
             asset    unstaking;
             uint32_t unstake_time;
