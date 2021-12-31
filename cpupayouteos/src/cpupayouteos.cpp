@@ -162,7 +162,9 @@ void cpupayouteos::intdelegatee(name user){
  [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::cpupowerup(name miner){
 
     
-     check(1!=1, "code got here");
+     //check(1!=1, "code got here");
+
+    uint32_t twelve_hours = 1; //
     //1 get current payee
     name payee = get_current_payee();
     //2 see if payee stake time is after start of payout round
@@ -170,11 +172,11 @@ void cpupayouteos::intdelegatee(name user){
     uint32_t userlastdelegate = get_user_delegatetime(payee);
     
     //has 12 hours past?, if not go to next payee and end action
-    if (userlastpaytime < current_time_point().sec_since_epoch(); + 60*60*12){
+    if (userlastpaytime < current_time_point().sec_since_epoch(); + twelve_hours){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
-     else if (userlastdelegate < current_time_point().sec_since_epoch(); + 60*60*12){
+     else if (userlastdelegate < current_time_point().sec_since_epoch(); + twelve_hours){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
@@ -184,19 +186,20 @@ void cpupayouteos::intdelegatee(name user){
          update_last_paid(payee);
 
      }
-    
-     long double payratio = get_paying_ratio();
-
-    
-    //3 find current payout amount with payout fraction for user
-
+    //get ECPU delegated to payee
+    asset payeebal = get_cpu_del_balance(name{"cpumintofeos"}, payee, symbol_code("ECPU") );
+    //get total ECPU delegated in total
+    asset totaldelstake = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+    //
     asset startpay_ecpu = get_starting_pay_ecpu();
-    asset divpayment_ecpu = asset(0, symbol("EOS", 4)); //initialization
-    divpayment_ecpu.amount = double(payratio*startpay_ecpu.amount)/100;
+    asset powerup = asset(0, symbol("EOS", 4)); //initialization
+
+    powerup = startpay_ecpu*(double(payeebal.amount))/(double(totaldelstake.amount))/2;
     
+    check(powerup.amount != 0, "powerup amount is zero");
     
     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-          std::make_tuple(get_self(), name{"powerupcalc1"}, divpayment_ecpu, payee.to_string())).send();
+          std::make_tuple(get_self(), name{"powerupcalc1"}, powerup, payee.to_string())).send();
 
 
     set_next_round();

@@ -16,6 +16,10 @@
                     "type": "asset"
                 },
                 {
+                    "name": "delegatepwr",
+                    "type": "asset"
+                },
+                {
                     "name": "cpupower",
                     "type": "asset"
                 },
