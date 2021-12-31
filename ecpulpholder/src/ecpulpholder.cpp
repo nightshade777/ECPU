@@ -84,7 +84,7 @@ void ecpulpholder::setdelegate(name account, name receiver, asset value){
 
      
          
-     powerup = (lastpay*double(value.amount)/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send
+     powerup = (lastpay*double(value.amount)/(double(ecpusupply.amount))/2);//get half of alloted ECPU for day and send, other half to be sent to cpupayouteos
 
      check(powerup.amount !=0, "ERROR EOS amount for CPU/NET Rental corresponding to delegated ECPU input for this action is 0.0000 EOS, try delegating more ECPU");
      check(powerup.amount >= 5, "ERROR EOS amount for CPU/NET Rental corresponding to delegated ECPU input for this action is less than 0.0005 EOS, try delegating more ECPU");
@@ -93,6 +93,9 @@ void ecpulpholder::setdelegate(name account, name receiver, asset value){
     
      action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
            std::make_tuple(get_self(), name{"powerupcalc1"}, powerup,receiver.to_string())).send();
+
+     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+                     std::make_tuple(get_self(), name{"cpupayouteos"}, powerup, std::string(""))).send();
      
 }
 
