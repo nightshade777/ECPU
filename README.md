@@ -2,7 +2,7 @@
 Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS, powered by deflationary EOS mining 
 
 
-![image](https://user-images.githubusercontent.com/51843516/147798878-694033ec-1a32-464b-b065-46be4e3e355a.png)
+![image](https://user-images.githubusercontent.com/51843516/147799301-e03cf885-2b18-4a4d-b954-d4220e8a02c9.png)
 
 
 
