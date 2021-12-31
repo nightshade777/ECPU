@@ -10,27 +10,64 @@ void cpupayouteos::initialize(name contract){
 
       queue_table queuetable(get_self(), get_self().value);
       auto existing = queuetable.find(get_self().value);
+
+      //if (existing !=queuetable.end()){
+
+        //   queuetable.erase(existing);
+
+      //}
+
+      if(existing == queuetable.end()){
       
-      queuetable.emplace( get_self(), [&]( auto& s ) {
+            queuetable.emplace( get_self(), [&]( auto& s ) {
       
-            s.contract = name{"cpupayouteos"};
-            s.currentpayee = name{"ddctesterxcr"};
-            s.remainingpay_ecpu = asset(0, symbol("EOS", 4)); 
-            s.startpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS")); 
-            s.stakestart = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
-            s.payoutstarttime = current_time_point().sec_since_epoch();
+                  s.contract = name{"cpupayouteos"};
+                  s.currentpayee = name{"ddctesterxcr"};
+                  s.remainingpay_ecpu = asset(0, symbol("EOS", 4)); 
+                  s.startpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS")); 
+                  s.stakestart = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+                  s.payoutstarttime = current_time_point().sec_since_epoch();
                   
-      });
+            });
+
+      }
+      else {
+            queuetable.modify( existing, get_self(), [&]( auto& s ){
+
+                  s.contract = name{"cpupayouteos"};
+                  s.currentpayee = name{"ddctesterxcr"};
+                  s.remainingpay_ecpu = asset(0, symbol("EOS", 4)); 
+                  s.startpay_ecpu = get_balance_eos(name{"eosio.token"}, name{"cpupayouteos"}, symbol_code("EOS")); 
+                  s.stakestart = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+                  s.payoutstarttime = current_time_point().sec_since_epoch();
+
+            });
+      }
+       
+
 
       delstake_stat globalstake(get_self(),get_self().value);
       auto existing2 = globalstake.find(get_self().value);
+
+      if(existing2 == globalstake.end()){
       
-      globalstake.emplace( get_self(), [&]( auto& s ) {
+            globalstake.emplace( get_self(), [&]( auto& s ) {
 
-            s.contract = name{"cpupayouteos"};
-            s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+                  s.contract = name{"cpupayouteos"};
+                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
 
-      });
+            });
+      }
+      else {
+            
+            globalstake.modify( existing2, get_self(), [&]( auto& s ){
+
+                  s.contract = name{"cpupayouteos"};
+                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+
+            });
+
+      }
 
 }
 
@@ -122,7 +159,7 @@ void cpupayouteos::intdelegatee(name user){
 
 
 
- [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::cpupowerup(name user){
+ [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupayouteos::cpupowerup(name miner){
 
     
      check(1!=1, "code got here");
@@ -159,7 +196,7 @@ void cpupayouteos::intdelegatee(name user){
     
     
     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-          std::make_tuple(get_self(), name{"powerupcalc1"}, divpayment_ecpu ,user.to_string())).send();
+          std::make_tuple(get_self(), name{"powerupcalc1"}, divpayment_ecpu, payee.to_string())).send();
 
 
     set_next_round();
@@ -169,16 +206,18 @@ void cpupayouteos::intdelegatee(name user){
  }
 
 
-[[eosio::on_notify("cpumintofeos::delegate")]] void cpupayouteos::setdelegate(name account, asset value){
+[[eosio::on_notify("cpumintofeos::delegate")]] void cpupayouteos::setdelegate(name account, name receiver, asset value){
 
       update_global_stake(account, value);
+      update_delegatee(receiver, value);
 
 
 
 }
-[[eosio::on_notify("cpumintofeos::undelegate")]] void cpupayouteos::setundelgate(name account, asset value){
+[[eosio::on_notify("cpumintofeos::undelegate")]] void cpupayouteos::setundelgate(name account, name receiver, asset value){
 
-      update_global_unstake(account, value);
+      update_global_stake(account, -value);
+      update_delegatee(receiver, -value);
 
 }
 

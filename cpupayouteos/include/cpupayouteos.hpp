@@ -23,11 +23,11 @@ CONTRACT cpupayouteos : public contract {
     void intdelegatee(name user);
 
     //listen to mining 
-    [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupowerup(name user);
+    [[eosio::on_notify("cpumintofeos::minereceipt")]] void cpupowerup(name miner);
     
     //listen to stake / unstake
-    [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, asset value);
-    [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, asset value);
+    [[eosio::on_notify("cpumintofeos::delegate")]] void setdelegate(name account, name receiver, asset value);
+    [[eosio::on_notify("cpumintofeos::undelegate")]] void setundelgate(name account, name receiver, asset value);
     
     
     TABLE delegatee { 
@@ -165,16 +165,57 @@ static asset get_ecpu_delstake(const name& token_contract_account, const symbol_
         return;
 }
 
-  void update_last_paid(name user){
+  void update_delegatee(name user, asset value){//update when delegating or undelegating, asset value can be negative
 
     delegatees delegatee(get_self(), get_self().value);
     auto existing = delegatee.find(user.value);
     const auto& st = *existing;
 
-    delegatee.emplace( get_self(), [&]( auto& s ) {
-        s.lastpaytime = current_time_point().sec_since_epoch();
-    });
+    if (existing  == delegatee.end()){
+
+            delegatee.emplace( get_self(), [&]( auto& s ) {
+                s.lastpaytime = current_time_point().sec_since_epoch();
+                s.delegatee = user;
+                s.ecpudelegated = value;
+                s.delegatetime = current_time_point().sec_since_epoch();
+                s.lastpaytime = current_time_point().sec_since_epoch();
+            });
+
+    }
+    
+    else{
+
+        const auto& st = *existing;
+
+        delegatee.modify( st, same_payer, [&]( auto& s ) {
+                
+                s.delegatetime = current_time_point().sec_since_epoch();
+                s.lastpaytime = current_time_point().sec_since_epoch();
+                s.ecpudelegated = s.ecpudelegated + value; 
+        });
+    }
+
+    asset ecpudelegated = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
+
+    if (ecpudelegated.amount == (0)){
+        
+        delegatee.erase(existing);
+    }
+    
   }
+
+  void update_last_paid(name user){ //update last pay time when receiving CPU/NET rental from mining activity
+
+    delegatees delegatee(get_self(), get_self().value);
+    auto existing = delegatee.find(user.value);
+    const auto& st = *existing;
+
+    delegatee.modify( st, same_payer, [&]( auto& s ) {
+        
+            s.lastpaytime = current_time_point().sec_since_epoch();
+           
+    });
+}
 
   uint32_t get_user_last_paid(name user){
 
@@ -445,124 +486,34 @@ long double get_paying_ratio(){
   void update_global_stake(name user, asset stakechange){
 
    
-    //1 find ecpu stored
-
-    asset cpudelegated = get_userstake(user);
-
-
-    delegatees delegatee(get_self(), get_self().value);
-    auto existing = delegatee.find(user.value);
-    const auto& st = *existing;
-
-
     delstake_stat globalstake(get_self(),get_self().value);
     auto existing2 = globalstake.find(get_self().value);
     const auto& st2 = *existing2;
 
 
-    if (existing == delegatee.end()){ //CASE 3 CONSIDERED: DIDNT HAVE DELEGATED STAKED BUT NOW DOES
+    globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-        delegatee.emplace( get_self(), [&]( auto& s ) {
+            s.totaldelstaked = get_current_stake();
 
-                        s.delegatee = user;
-                        s.ecpudelegated = cpudelegated;
-                        s.delegatetime = current_time_point().sec_since_epoch();
-                        s.lastpaytime = current_time_point().sec_since_epoch();
-
-                  });
-        globalstake.modify( st2, same_payer, [&]( auto& s ) {
-
-                        s.totaldelstaked = get_current_stake();
-
-                  });
-    
-    }
-
-    else { //already STAKED, STAKED EVEN MORE
-
-        delegatee.modify( st, same_payer, [&]( auto& s ) {
-
-                        s.ecpudelegated = s.ecpudelegated + stakechange;
-                        s.delegatetime = current_time_point().sec_since_epoch();
-                        s.lastpaytime = current_time_point().sec_since_epoch();
-
-                  });
-        globalstake.modify( st2, same_payer, [&]( auto& s ) {
-
-                        s.totaldelstaked = get_current_stake();
-
-                  });
-
-
-    }
-
-
-
+    });
 
   }
 
   void update_global_unstake(name user, asset stakechange){
 
-    delegatees delegatee(get_self(), get_self().value);
-    auto existing = delegatee.find(user.value);
-    const auto& st = *existing;
-
+    
     delstake_stat globalstake(get_self(),get_self().value);
-    auto existing2 = globalstake.find(get_self().value);
-    const auto& st2 = *existing2;
-
-    queue_table queuetable(get_self(), get_self().value);
-    auto existing3 = queuetable.find(get_self().value);
-    check( existing3 != queuetable.end(), "contract table not deployed" );
-    const auto& st3 = *existing3;
-
-    name nextpayer;
-
-    if (existing3->currentpayee == user){
-
-            existing++;
-            nextpayer = existing->delegatee;
-            queuetable.modify( st3, same_payer, [&]( auto& s ) {
-
-                        s.currentpayee = nextpayer;
-
-                  });
-
-        }
-
-    if (existing == delegatee.end()){
-
-        return; 
-
-    }
+    auto existing = globalstake.find(get_self().value);
+    const auto& st = *existing;
 
     asset ecpudelegated = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
 
-    if (ecpudelegated.amount == (0)){
         
-        delegatee.erase(existing);
-        
-        globalstake.modify( st2, same_payer, [&]( auto& s ) {
+    globalstake.modify( st, same_payer, [&]( auto& s ) {
 
-                        s.totaldelstaked = get_current_stake();
+        s.totaldelstaked = get_current_stake();
 
-                  });
-    }
-
-    else{
-
-        delegatee.modify( st, same_payer, [&]( auto& s ) {
-
-                        s.ecpudelegated = s.ecpudelegated - stakechange;
-                        s.delegatetime = current_time_point().sec_since_epoch();
-                    });
-
-        globalstake.modify( st2, same_payer, [&]( auto& s ) {
-
-                        s.totaldelstaked = get_current_stake();
-
-                  });
-    }
+    });
   }
 
   asset get_current_stake(){
