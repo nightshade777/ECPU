@@ -12,24 +12,16 @@
                     "type": "asset"
                 },
                 {
-                    "name": "storebalance",
+                    "name": "delegated",
                     "type": "asset"
                 },
                 {
-                    "name": "delegatepwr",
+                    "name": "undelegating",
                     "type": "asset"
                 },
                 {
                     "name": "cpupower",
                     "type": "asset"
-                },
-                {
-                    "name": "unstaking",
-                    "type": "asset"
-                },
-                {
-                    "name": "unstake_time",
-                    "type": "uint32"
                 }
             ]
         },

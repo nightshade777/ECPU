@@ -80,13 +80,11 @@ CONTRACT cpupayouteos : public contract {
      struct [[eosio::table]] account {
             
             asset    balance;
-            asset    storebalance; //balance of staked tokens, this is a transfer blocker variable representing total ecpu locked
-            asset    delegatepwr;  //balance of staked tokens able to be delegated, max is the number of tokens staked, converted to cpupower upon delegation
+            asset    delegated;  //balance of tokens able to be delegated, max is the number of tokens staked, converted to cpupower upon delegation
                                    //(can be thought of as amount of staked tokens which have not been delegated yet)
-            asset    cpupower;     //ecpu staked to bal (includes staked from others)
-                                   //(can be thought of as the sum of all ECPU delegated to this accoount)
-            asset    unstaking;
-            uint32_t unstake_time;
+            asset    undelegating; //ECPU in process of clearing undelegation
+            asset    cpupower;     //ECPU tokens delegated to bal (includes delegated from others)
+                                   //(can be thought of as the sum of all ECPU delegated to this account)
             
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
