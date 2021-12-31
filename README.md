@@ -9,13 +9,13 @@ Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management Syste
 
 **DIVISION OF CONTRACT FUNCTIONS**
 
-**cpumintofeos**: is the ECPU token contract, handles ECPU mining code, receives eos from mining and distributes to ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanent REX pool (ecpuholderlp contract) every hour.
+**cpumintofeos**: is the ECPU token contract, handles ECPU mining code, receives eos from mining and distributes to the ecpulpholder contract, all eos sent to this contract will mine ECPU and be sent to be locked forever in the permanent REX pool (ecpulpholder contract) every hour. Mining code utilizes the difficulty-adjusted algo from eidos but with 0.0010 EOS with no refund for spam reduction. 
 
-**ecpulpholder**: holds the permanent pool, handles staking to rex, proxy vot action, receiving stake rewards, and issuing correct amount of eos to the cpupayouteos for powerup distrubution for ECPU delegatees ( proportion corresponding to unstaked ECPU remains liquid in a reserve which will be sent directly for powerup purchase in the case of ECPU being delegated mid-round)
+**ecpulpholder**: holds the permanent pool, handles staking to rex, executes proxy vote action, receives stake rewards, and issues correct amount of eos to the cpupayouteos for CPU/NET distrubution for ECPU delegatees (proportion corresponding to unstaked ECPU remains liquid in a reserve which will be sent directly for rental purchase in the case of ECPU being delegated mid-round)
 
-**cpupayouteos**: handles powerup distribution, receives mining notifications from cpumintofeos to iterate through delegatee list and distrubute powerups, all eos sent to this contract will be distributed as powerups to the delegatee list
+**cpupayouteos**: handles CPU/NET distribution, receives mining notifications from cpumintofeos to iterate through delegatee list and distrubute powerups, all eos sent to this contract will be distributed as powerups to the delegatee list
 
-**powerupcalc1**: receives eos and an account name in the memo, purchases powerup for that account with approximtely 99.9% to CPU and 0.1% to NET
+**powerupcalc1**: receives eos and an account name in the memo, purchases CPU/NET rental for that account with approximtely 99.9% to CPU and 0.1% to NET
 
 
 
