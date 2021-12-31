@@ -104,14 +104,13 @@ CONTRACT cpupayouteos : public contract {
         
 
         struct [[eosio::table]] currency_stats {
-            asset    supply;
+             asset    supply;
             asset    max_supply;
             name     issuer;
-            uint32_t  prevmine;
-            uint32_t  creationtime;
-            uint32_t  lastdeposit;
-            asset    totalstake;
-            asset    totaldelegate;
+            uint32_t  prevmine;//time of most recent mining action
+            uint32_t  creationtime; //time of token creation
+            uint32_t  lastdeposit;//time of last deposit of above mining income rex queue 
+            asset    totaldelegate; //total amount of ECPU delegated
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };

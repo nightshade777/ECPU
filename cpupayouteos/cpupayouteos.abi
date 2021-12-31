@@ -64,10 +64,6 @@
                     "type": "uint32"
                 },
                 {
-                    "name": "totalstake",
-                    "type": "asset"
-                },
-                {
                     "name": "totaldelegate",
                     "type": "asset"
                 }
