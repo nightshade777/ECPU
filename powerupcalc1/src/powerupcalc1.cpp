@@ -11,7 +11,7 @@ ACTION powerupcalc1::calculate(name user, asset eosinput) {
   long double w = double(res.weight);// denominator of utilization fraction for  spot price calculation
   eosinput = eosinput - asset(2, symbol("EOS", 4));// alignement to make sure fee is not greater than desired expenditure
 
-  
+  eosinput = eosinput *95/100;
 
   if( eosinput.amount >= 1000){ // account for 1% slippage for any purchase is greater than 0.1 EOS
           eosinput = eosinput *99/100;
