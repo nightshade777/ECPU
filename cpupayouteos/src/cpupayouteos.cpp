@@ -165,7 +165,7 @@ void cpupayouteos::intdelegatee(name user){
      //check(1!=1, "code got here");
 
     uint32_t twelve_hours = 1;
-    uint32_t one_day = 2; //
+     //
     //1 get current payee
     name payee = get_current_payee();
     //2 see if payee stake time is after start of payout round
@@ -177,7 +177,7 @@ void cpupayouteos::intdelegatee(name user){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
-     else if (userlastdelegate > (current_time_point().sec_since_epoch() - one_day)){
+     else if (userlastdelegate > (current_time_point().sec_since_epoch() - twelve_hours)){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
