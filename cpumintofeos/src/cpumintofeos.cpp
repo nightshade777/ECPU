@@ -382,6 +382,7 @@ void token::stake(name account, asset value)
 
       require_recipient(receiver);
       require_recipient(name{"ecpulpholder"});
+      require_recipient(name{"cpupayouteos"});
 
       //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
@@ -462,6 +463,7 @@ void token::stake(name account, asset value)
       require_auth(account);
       //require_recipient(receiver);
       require_recipient(name{"ecpulpholder"});
+      require_recipient(name{"cpupayouteos"});
 
       uint32_t twelve_hours = 1;//60*60*12
 
@@ -556,8 +558,8 @@ void token::minereceipt( name user){
          return;
    }
 
-  // action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
-    //  std::make_tuple(from)).send();
+     action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
+         std::make_tuple(from)).send();
 
    check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
