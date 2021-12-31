@@ -23,7 +23,6 @@ void token::create( const name&   issuer,
        s.creationtime  = current_time_point().sec_since_epoch();
        s.prevmine = current_time_point().sec_since_epoch();
        s.lastdeposit = current_time_point().sec_since_epoch();
-       s.totalstake =  asset(0, symbol("ECPU", 8));//initialize asset to zero
        s.totaldelegate =  asset(0, symbol("ECPU", 8));//initialize asset to zero
        
     });
@@ -112,18 +111,17 @@ void token::transfer( const name&    from,
 void token::sub_balance( const name& owner, const asset& value ) {
    
       /**
-    this function has been modified from eosio.token to implement staking system
+    this function has been modified from eosio.token to implement delegating system
     it blocks transacting with stored balance and balances that are undergoing the three day clear period
     **/
-    uint32_t time_now = current_time_point().sec_since_epoch();
-    uint32_t one_day_time = 60*60*24;//1 day in seconds
+    
    
    
    //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
    // if (owner == name{"chintailease"}){
     //      one_day_time = 0;
     //}
-    
+    asset locked_ecpu = get_non_liquid_ecpu(owner);
     
     accounts from_acnts( _self, owner.value );
 
@@ -132,20 +130,8 @@ void token::sub_balance( const name& owner, const asset& value ) {
 
     from_acnts.modify( from, owner, [&]( auto& a ) 
       {
-         
-        if(time_now<(a.unstake_time+one_day_time)) //checks if anything is in process of unstaking, will stop transfer of tokens in process of unstaking
-          {
-            uint32_t time_left = round(((a.unstake_time + one_day_time) - time_now)/60); // for error msg display only
-            std::string errormsg = "Cannot send staked tokens. Tokens in withdraw will be availible in " + std::to_string(time_left) + " minute(s)";
-            check(value <= (a.balance-(a.unstaking+a.storebalance)),errormsg);
-          }
-       
-        else 
-          {
-           check(value <= (a.balance-a.storebalance),"Cannot send staked tokens");//there are no funds in process of unstaking, only stop transfer of stored funds
-          }
-         
-         a.balance -= value;
+        check(value <= (a.balance-(locked_ecpu)), "cannot send delegated tokens nor tokens in process of undelegating");
+        a.balance -= value;
       });
 
 }
@@ -154,19 +140,22 @@ void token::add_balance( const name& owner, const asset& value, const name& ram_
 {
    accounts to_acnts( get_self(), owner.value );
    auto to = to_acnts.find( value.symbol.code().raw() );
+   
    if( to == to_acnts.end() ) {
       to_acnts.emplace( ram_payer, [&]( auto& a ){
-        a.balance = value;
-        a.storebalance = asset(0, symbol("ECPU", 8));   
-        a.unstaking = asset(0, symbol("ECPU", 8));     
-        a.unstake_time = 0; 
-        a.delegatepwr = asset(0, symbol("ECPU", 8));
-        a.cpupower = asset(0, symbol("ECPU", 8));
         
+        a.balance = value;
+        a.delegated = asset(0, symbol("ECPU", 8));
+        a.undelegating = asset(0, symbol("ECPU", 8));
+        a.cpupower = asset(0, symbol("ECPU", 8));
+      
       });
-   } else {
+   } 
+   else {
       to_acnts.modify( to, same_payer, [&]( auto& a ) {
+        
         a.balance += value;
+      
       });
    }
 }
@@ -187,11 +176,9 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
    if( it == acnts.end() ) {
       acnts.emplace( ram_payer, [&]( auto& a ){
         a.balance = asset{0, symbol};
-        a.storebalance = a.balance;
-        a.delegatepwr = a.balance;
-        a.cpupower = a.balance;    
-        a.unstaking = a.balance;     
-        a.unstake_time = 0;
+        a.delegated = a.balance;
+        a.undelegating = a.balance;
+        a.cpupower = a.balance;
       });
    }
 }
@@ -210,19 +197,17 @@ void token::open2(name user)
         auto it = acnts.find( sym_code_raw );
         if( it == acnts.end() ) {
             acnts.emplace( user, [&]( auto& a ){
-                a.balance = cpu;
-                a.storebalance = a.balance;
-                a.delegatepwr = a.balance;
-                a.cpupower = a.balance;    
-                a.unstaking = a.balance;     
-                a.unstake_time = 0;
+                a.balance = asset(0, symbol("ECPU", 8));
+                a.delegated = asset(0, symbol("ECPU", 8));
+                a.undelegating = asset(0, symbol("ECPU", 8));
+                a.cpupower = asset(0, symbol("ECPU", 8));
             });
         }
 
         
     }
 
-//simple version of open with only username and recipient as argument, user pays for ram
+//version of open with only username and recipient as argument, user pays for ram
 void token::open3(name user, name recipient)
 {
         require_auth(user);
@@ -237,12 +222,10 @@ void token::open3(name user, name recipient)
         auto it = acnts.find( sym_code_raw );
         if( it == acnts.end() ) {
             acnts.emplace( user, [&]( auto& a ){
-                a.balance = cpu;
-                a.storebalance = a.balance;
-                a.delegatepwr = a.balance;
-                a.cpupower = a.balance;    
-                a.unstaking = a.balance;     
-                a.unstake_time = 0;
+                a.balance = asset(0, symbol("ECPU", 8));
+                a.delegated = asset(0, symbol("ECPU", 8));
+                a.undelegating = asset(0, symbol("ECPU", 8));
+                a.cpupower = asset(0, symbol("ECPU", 8));
             });
         }
 
@@ -262,118 +245,6 @@ void token::close( const name& owner, const symbol& symbol )
 
 
 
-void token::stake(name account, asset value)
-    {
-      //stake tokens for 12 hour cpu powerups, only delegated stake, to self or others will receive poweups
-      //set self delegate to false if immediately delegating to others
-
-      require_auth(account);
-      require_recipient(account);
-
-      require_recipient(name{"cpumintofeos"});
-      
-      auto sym = value.symbol.code();
-      stats statstable( _self, sym.raw() );
-      const auto& st = statstable.get( sym.raw());
-
-      uint32_t time_now = current_time_point().sec_since_epoch();
-      uint32_t one_day_time = 1;
-      
-      //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
-      //if (account == name{"chintailease"}){
-      //   one_day_time = 0;
-      //}
-      check( value.amount > 0, "must stake positive quantity" );
-      check( value.is_valid(), "invalid quantity" );
-      check( value.symbol == st.supply.symbol, "symbol precision mismatch" );
-      check( value.symbol.is_valid(), "invalid symbol name" );
-    
-      accounts to_acnts( _self, account.value );
-      auto to = to_acnts.find( value.symbol.code().raw() );
-    
-      to_acnts.modify( to, same_payer, [&]( auto& a )
-        {
-          eosio::check((value <= (a.balance-a.storebalance) ), "Cannot stake more than your unstaked balance");
-          a.storebalance += value;
-          a.delegatepwr += value;
-          
-          if (a.unstaking <= value){
-              a.unstaking = asset(0, symbol("ECPU", 8));
-          }
-          else{
-              a.unstaking = a.unstaking - value;
-          }
-
-          if(time_now >= (one_day_time + a.unstake_time)){
-              a.unstaking = asset(0, symbol("ECPU", 8));
-          }
-
-        });
-
-        updatestake(value);//update global var for tracking stake
-    
-    }
-  
-  
-  void token::unstake(name account, asset value)
-    {
-
-      /**
-      unstake tokens, needs one day to unstake
-      note: unstaking is a dummy variable and should not be used by frontend apps to display unstaking amount
-      is only valid as unstaking amount if current time is less than one day from unstake time
-      **/
-      require_auth(account);
-      require_recipient(account);
-      require_recipient(name{"cpumintofeos"});
-    
-      auto sym = value.symbol.code();
-      stats statstable( _self, sym.raw() );
-      const auto& st = statstable.get( sym.raw() );
-
-      check( value.amount > 0, "must unstake positive quantity" );
-      check( value.is_valid(), "invalid quantity" );
-      check( value.symbol == st.supply.symbol, "symbol precision mismatch" );
-      check( value.symbol.is_valid(), "invalid symbol name" );
-    
-      uint32_t time_now = current_time_point().sec_since_epoch();
-      uint32_t one_day_time = 1;
-
-      //WHITELIST FOR INTSTA UNSTAKE REQURED FOR CHINTAI LENDING INTEGRATION:
-      //if (account == name{"chintailease"}){
-      //    one_day_time = 0;
-      //}
-      
-      accounts to_acnts( _self, account.value );
-      auto to = to_acnts.find( value.symbol.code().raw() );
-   
-      to_acnts.modify( to, same_payer, [&]( auto& a ) 
-        {
-        
-          check((value <= a.storebalance  ), "Cannot unstake more than your staked balance");
-          a.storebalance -= value;
-          a.delegatepwr -= value;
-          
-          check(a.delegatepwr.amount >= 0, "ECPU Power will become below zero. Must undelegate ECPU before unstaking this amount.");
-        
-          if(time_now<= (one_day_time + a.unstake_time))
-            {
-              a.unstaking += value;
-            }
-          else
-            {
-              a.unstaking = value;
-            }
-          
-          a.unstake_time = time_now;
-        
-        });
-
-        updatestake(-value);
-    
-    }
-
-  
   
   void token::delegate (name account, name receiver, asset value){
       
@@ -381,8 +252,8 @@ void token::stake(name account, asset value)
       
 
       require_recipient(receiver);
-      require_recipient(name{"ecpulpholder"});
-      require_recipient(name{"cpupayouteos"});
+      //require_recipient(name{"ecpulpholder"});
+      //require_recipient(name{"cpupayouteos"});
 
       //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
@@ -394,6 +265,8 @@ void token::stake(name account, asset value)
       check( value.amount > 0, "must enter value greater than zero");
       //remove CPU power from lender
 
+      asset locked_ecpu = get_non_liquid_ecpu(account);
+
       
 
       accounts from_acnts( get_self(), account.value );
@@ -403,8 +276,8 @@ void token::stake(name account, asset value)
       //check(to!=from_acnts.end()-------- Delegator TO Pay RAM inside DELEGATE ACTIon
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          check((value <= a.delegatepwr ), "Cannot delegate more than your remaining undelegated staked tokens");
-          a.delegatepwr -= value;
+          check((value <= (a.balance - locked_ecpu) ), "Cannot delegate more than your remaining undelegated staked tokens");
+          a.delegated += value;
         });
 
         
@@ -417,11 +290,9 @@ void token::stake(name account, asset value)
       if( tor == to_acnts.end() ) {
             to_acnts.emplace( account, [&]( auto& a ){
                 a.balance = asset(0, symbol("ECPU", 8));
-                a.storebalance = asset(0, symbol("ECPU", 8));
-                a.delegatepwr = asset(0, symbol("ECPU", 8));
-                a.cpupower = value;   
-                a.unstaking = asset(0, symbol("ECPU", 8));   
-                a.unstake_time = 0;
+                a.delegated = asset(0, symbol("ECPU", 8));
+                a.undelegating = asset(0, symbol("ECPU", 8));
+                a.cpupower = value;
             });
         }
       else {
@@ -442,6 +313,9 @@ void token::stake(name account, asset value)
                 a.recipient = receiver;
                 a.cpupower = value;
                 a.delegatetime = current_time_point().sec_since_epoch();
+                
+                a.undelegatingecpu = asset(0, symbol("ECPU", 8));
+                a.undelegatetime = 0;
           });
       }
       //if delegatee/receiver already exists as a existing receiver for the delegator, add to existing balance
@@ -455,15 +329,17 @@ void token::stake(name account, asset value)
      
       
       updatedelegate(value);
+
+      
       
       
   }
   void token::undelegate (name account, name receiver, asset value){
       
       require_auth(account);
-      //require_recipient(receiver);
-      require_recipient(name{"ecpulpholder"});
-      require_recipient(name{"cpupayouteos"});
+      //require_recipient(receiver); notification cannot happen on undelegate or a smartcontract can force permanent delegation
+      //require_recipient(name{"ecpulpholder"});
+      //require_recipient(name{"cpupayouteos"});
 
       uint32_t twelve_hours = 1;//60*60*12
 
@@ -475,32 +351,37 @@ void token::stake(name account, asset value)
       check( value.symbol == st.supply.symbol, "symbol precision mismatch" );
       check( value.symbol.is_valid(), "invalid symbol name" );
       check( value.amount > 0, "must enter value greater than zero");
+      
       asset finalcpupower;
       asset initialcpupower;
+      
       delegates delegatetable(get_self(),account.value);
       auto tod = delegatetable.find(receiver.value);
       check(tod != delegatetable.end(), "cannot undelegate nonexisting delegation");
+      
       delegatetable.modify(tod, same_payer, [&]( auto& a ){
-                
-            check((a.delegatetime+(twelve_hours)) <= current_time_point().sec_since_epoch(),"must wait 12 hours to undelegate");
-            initialcpupower = a.cpupower;
-            a.cpupower = a.cpupower - value;
-            finalcpupower = a.cpupower;
+        
+            a.cpupower -= value;
+            check(a.cpupower.amount >= 0, "Error, cannot undelegate beyond initial delegation");
+            
+            a.undelegatingecpu += value;
+            a.undelegatetime = current_time_point().sec_since_epoch();
 
       });
 
-      check(value <= initialcpupower, "cannot undelegate more than current delegated amount");
-      if (finalcpupower.amount == 0){
-          delegatetable.erase(tod);
-      }
-      //add delegate power back to oringinal lender
+      
+     // if (finalcpupower.amount == 0){
+     //     delegatetable.erase(tod);
+      //}
+      //subtract delegated amount from oringinal lender
       
       accounts from_acnts( _self, account.value );
       auto to = from_acnts.find( value.symbol.code().raw() );
    
       from_acnts.modify( to, same_payer, [&]( auto& a ) 
         {
-          a.delegatepwr += value;
+          a.delegated -= value;
+          a.undelegating += value;
         });
       
       //remove cpu power from borrower 
@@ -531,7 +412,7 @@ void token::destroytoken(asset token) {
   }
 
  void token::destroyacc(asset token, name account, name delegaterow) {
-    require_auth(account);
+    require_auth(get_self());
 
     //auto sym = token.symbol;
     //accounts accounts_table(get_self(), account.value);
@@ -558,8 +439,8 @@ void token::minereceipt( name user){
          return;
    }
 
-     action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
-         std::make_tuple(from)).send();
+     //action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
+     //    std::make_tuple(from)).send();
 
    check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
@@ -569,19 +450,21 @@ void token::minereceipt( name user){
    //asset balance = get_balance( name{"eosio.token"}, get_self(), eos.symbol.code());
 
 
+
    //auto sym = quantity.symbol.code();
    asset currentbal = get_balance_eos(name{"eosio.token"}, name{"cpumintofeos"}, symbol_code("EOS")); 
 
-   //check(1!=1, "code got here 558");
+  
 
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
-   
-       action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-       std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string(""))).send();
+    //check(1!=1, "code got here 458");
+       //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+       //std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string(""))).send();
 
    }
    
    mine(from);
+   
   
 }
 

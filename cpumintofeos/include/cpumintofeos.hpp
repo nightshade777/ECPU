@@ -53,13 +53,7 @@ namespace eosio {
          
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
-          
-         
-         [[eosio::action]]
-         void stake (name account, asset value);
-         
-         [[eosio::action]]
-         void unstake (name account, asset value);
+   
 
          [[eosio::action]]
          void delegate (name account, name receiver, asset value);
@@ -124,19 +118,12 @@ namespace eosio {
             return ac.balance;
          }
          
-         static asset get_stored_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
-         {
-            accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw() );
-            return ac.storebalance;
-         }
-         
-         static asset get_delpower_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         /**static asset get_delpower_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
          {
             accounts accountstable( token_contract_account, owner.value );
             const auto& ac = accountstable.get( sym_code.raw() );
             return ac.delegatepwr;
-         }
+         }**/
          
          static asset get_cpupower_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
          {
@@ -164,19 +151,7 @@ namespace eosio {
             
             return true;
          }
-              
-
-    void updatestake(asset quantity){
-
-        auto sym = quantity.symbol;
-        stats statstable( get_self(), sym.code().raw() );
-        auto existing = statstable.find( sym.code().raw() );
-        const auto& st = *existing;
-        statstable.modify( st, same_payer, [&]( auto& s ) {
-            s.totalstake += quantity;
-        });
-}
-
+ 
    void updatedelegate(asset quantity){
 
         auto sym = quantity.symbol;
@@ -188,13 +163,15 @@ namespace eosio {
         });
 }
 
-    uint32_t get_last_deposit()
-         {
+    uint32_t get_last_deposit(){
+            
             asset quantity = asset(0, symbol("ECPU", 8));
             auto sym = quantity.symbol;
-      
+       
             stats statstable( get_self(), sym.code().raw() );
+           
             const auto& to = statstable.get( sym.code().raw() );
+             
             return to.lastdeposit;
             
     
@@ -237,6 +214,99 @@ namespace eosio {
         }
 
 }
+
+        
+        
+        
+        
+        
+        
+        asset get_non_liquid_ecpu(name account){
+        
+         
+           // if delgatee's undelegating ECPU != 0, then check if 24 hours have passed
+           //if 24 hours have passed, modify entry to zero
+           //if 24 hours have not passed, add to illiquid balance
+          
+           update_delegating(account); //checks if undelegating period has been passed and removes undelegate amounts which have been cleared
+ 
+           asset non_liquid_ecpu =  asset(0, symbol("ECPU", 8)); //initialization
+
+           accounts from_acnts( get_self(), account.value );
+           auto to = from_acnts.find( non_liquid_ecpu.symbol.code().raw() );
+           
+           non_liquid_ecpu += (to->delegated); // add delegated CPU
+           
+           delegates delegatetable(get_self(),account.value);
+
+           auto it = delegatetable.begin();
+
+           if (it ==  delegatetable.end()){
+
+               return asset(0, symbol("ECPU", 8));
+           }
+           for(it= delegatetable.begin(); it != delegatetable.end(); it++){
+
+               if((it->undelegatingecpu).amount != 0){
+               
+                     non_liquid_ecpu = non_liquid_ecpu + (it->undelegatingecpu); //add ECPU still undelegating
+
+               }
+
+           }
+           return non_liquid_ecpu;
+        }
+
+        void update_delegating(name account){//iterates through all delegates which this account has delegated to and 
+                                             //updates any undelegating vars which have already cleared to zero
+                                             //sums all cleared undelegating and removes from var in accounts table
+                                             
+
+   
+           uint32_t time_now = current_time_point().sec_since_epoch();
+           uint32_t one_day  = 60;
+
+           asset undelegateclear = asset(0, symbol("ECPU", 8)); //sum of undelegting amount to be cleared
+
+           
+
+           delegates delegatetable(get_self(),account.value);
+
+           auto it = delegatetable.begin();
+
+           if (it ==  delegatetable.end()){
+
+               return;
+           }
+
+
+           for(it = delegatetable.begin(); it != delegatetable.end(); it++){
+
+               if((it->undelegatingecpu).amount != 0){
+               
+   
+                     if((it->undelegatetime) < (time_now - one_day)){
+
+                        delegatetable.modify(it, same_payer, [&]( auto& a ){
+                              
+                              undelegateclear += a.undelegatingecpu;
+                              a.undelegatingecpu =  asset(0, symbol("ECPU", 8));
+
+                        });
+                     }
+
+               }
+
+           }
+           accounts from_acnts( _self, account.value );
+           auto to = from_acnts.find( undelegateclear.symbol.code().raw() );
+   
+           from_acnts.modify( to, same_payer, [&]( auto& a ) {
+               a.undelegating -= undelegateclear;
+           });
+
+        }
+
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
@@ -246,13 +316,13 @@ namespace eosio {
       
          struct [[eosio::table]] account {
             asset    balance;
-            asset    storebalance; //balance of staked tokens, this is a transfer blocker variable representing total ecpu locked
-            asset    delegatepwr;  //balance of staked tokens able to be delegated, max is the number of tokens staked, converted to cpupower upon delegation
+            asset    delegated;  //balance of tokens able to be delegated, max is the number of tokens staked, converted to cpupower upon delegation
                                    //(can be thought of as amount of staked tokens which have not been delegated yet)
-            asset    cpupower;     //ecpu staked to bal (includes staked from others)
+            asset    undelegating; //ECPU in process of clearing undelegation
+            asset    cpupower;     //ECPU tokens delegated to bal (includes delegated from others)
                                    //(can be thought of as the sum of all ECPU delegated to this accoount)
-            asset    unstaking;
-            uint32_t unstake_time;
+           
+           
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
          };
@@ -269,21 +339,23 @@ namespace eosio {
             asset    supply;
             asset    max_supply;
             name     issuer;
-            uint32_t  prevmine;
-            uint32_t  creationtime;
+            uint32_t  prevmine;//time of most recent mining action
+            uint32_t  creationtime; //time of token creation
             uint32_t  lastdeposit;//time of last deposit of above mining income rex queue 
-            asset    totalstake;
-            asset    totaldelegate;
+            asset    totaldelegate; //total amount of ECPU delegated
 
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
-
+         //scope is the account executing the delegate action, this table gives a list of all delegatees with respective d_ECPU from delegator
          struct [[eosio::table]] delegatecpu {
             
-            name     recipient;
-            asset    cpupower;
-            uint32_t  delegatetime;
+            name      recipient; //receiver of degated ECPU (cpupower)
+            asset     cpupower; // amount of ECPU delegated
+            uint32_t  delegatetime; // time of MOST RECENT delegation
+
+            asset     undelegatingecpu;//ECPU being undelegated, will be non-zero even after clearing period until the delegator executes a transfer/delegate/undelegate action to refresh
+            uint32_t  undelegatetime;// time of MOST RECENT delegation
             
 
             uint64_t primary_key()const { return recipient.value; } 

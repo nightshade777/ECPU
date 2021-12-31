@@ -12,24 +12,16 @@
                     "type": "asset"
                 },
                 {
-                    "name": "storebalance",
+                    "name": "delegated",
                     "type": "asset"
                 },
                 {
-                    "name": "delegatepwr",
+                    "name": "undelegating",
                     "type": "asset"
                 },
                 {
                     "name": "cpupower",
                     "type": "asset"
-                },
-                {
-                    "name": "unstaking",
-                    "type": "asset"
-                },
-                {
-                    "name": "unstake_time",
-                    "type": "uint32"
                 }
             ]
         },
@@ -100,10 +92,6 @@
                     "type": "uint32"
                 },
                 {
-                    "name": "totalstake",
-                    "type": "asset"
-                },
-                {
                     "name": "totaldelegate",
                     "type": "asset"
                 }
@@ -141,6 +129,14 @@
                 },
                 {
                     "name": "delegatetime",
+                    "type": "uint32"
+                },
+                {
+                    "name": "undelegatingecpu",
+                    "type": "asset"
+                },
+                {
+                    "name": "undelegatetime",
                     "type": "uint32"
                 }
             ]
@@ -258,20 +254,6 @@
             ]
         },
         {
-            "name": "stake",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "value",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
             "name": "transfer",
             "base": "",
             "fields": [
@@ -303,20 +285,6 @@
                 },
                 {
                     "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "value",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "unstake",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
                     "type": "name"
                 },
                 {
@@ -383,11 +351,6 @@
             "ricardian_contract": ""
         },
         {
-            "name": "stake",
-            "type": "stake",
-            "ricardian_contract": ""
-        },
-        {
             "name": "transfer",
             "type": "transfer",
             "ricardian_contract": ""
@@ -395,11 +358,6 @@
         {
             "name": "undelegate",
             "type": "undelegate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "unstake",
-            "type": "unstake",
             "ricardian_contract": ""
         }
     ],
