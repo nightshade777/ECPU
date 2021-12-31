@@ -57,13 +57,6 @@ using namespace eosio;
             return ac.balance;
          }
 
-         static asset get_ecpu_stake(const name& token_contract_account, const symbol_code& sym_code) // build struct from cpumintofeos account and pull total ecpu staked from table
-         {
-            stats statstable( token_contract_account, sym_code.raw() );
-            const auto& st = statstable.get( sym_code.raw() );
-            return st.totalstake;
-         }
-
          static asset get_ecpu_delstake(const name& token_contract_account, const symbol_code& sym_code) // build struct from cpumintofeos account and pull total ecpu staked from table
          {
             stats statstable( token_contract_account, sym_code.raw() );
@@ -160,11 +153,10 @@ using namespace eosio;
             asset    supply;
             asset    max_supply;
             name     issuer;
-            uint32_t  prevmine;
-            uint32_t  creationtime;
+            uint32_t  prevmine;//time of most recent mining action
+            uint32_t  creationtime; //time of token creation
             uint32_t  lastdeposit;//time of last deposit of above mining income rex queue 
-            asset    totalstake;
-            asset    totaldelegate;
+            asset    totaldelegate; //total amount of ECPU delegated
             
             uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
