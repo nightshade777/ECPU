@@ -54,7 +54,7 @@ void cpupayouteos::initialize(name contract){
             globalstake.emplace( get_self(), [&]( auto& s ) {
 
                   s.contract = name{"cpupayouteos"};
-                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total delegated stake of ECPU
 
             });
       }
@@ -63,7 +63,7 @@ void cpupayouteos::initialize(name contract){
             globalstake.modify( existing2, get_self(), [&]( auto& s ){
 
                   s.contract = name{"cpupayouteos"};
-                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
+                  s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total delegated stake of ECPU
 
             });
 
@@ -94,7 +94,7 @@ void cpupayouteos::resetround(name contract){
       queuetable.modify( st, same_payer, [&]( auto& s ) {
                    
             s.currentpayee = firstpayee;
-            s.stakestart = get_current_stake(); 
+            s.stakestart = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());
             s.payoutstarttime = current_time_point().sec_since_epoch();
 
       });
@@ -108,15 +108,14 @@ void cpupayouteos::intdelegatee(name user){
 
       require_auth(get_self());
 
-      
       asset staked = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
-
-
 
       delegatees delegatee(get_self(), get_self().value);
       auto existing = delegatee.find(user.value);
       const auto& st = *existing;
 
+      //delegatee.erase(existing);
+     
       if (existing == delegatee.end()){
 
       
@@ -150,9 +149,10 @@ void cpupayouteos::intdelegatee(name user){
 
       globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-                        s.totaldelstaked = get_current_stake(); 
+                        s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find delegated total stake of ECPU
 
                   });
+                  
 }
 
 
@@ -208,7 +208,7 @@ void cpupayouteos::intdelegatee(name user){
 
 [[eosio::on_notify("cpumintofeos::delegate")]] void cpupayouteos::setdelegate(name account, name receiver, asset value){
 
-      update_global_stake(account, value);
+      update_global_stake();
       update_delegatee(receiver, value);
 
 
@@ -216,7 +216,7 @@ void cpupayouteos::intdelegatee(name user){
 }
 [[eosio::on_notify("cpumintofeos::undelegate")]] void cpupayouteos::setundelgate(name account, name receiver, asset value){
 
-      update_global_stake(account, -value);
+      update_global_stake();
       update_delegatee(receiver, -value);
 
 }

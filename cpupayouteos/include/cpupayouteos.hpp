@@ -132,8 +132,13 @@ static asset get_ecpu_delstake(const name& token_contract_account, const symbol_
           const auto& st = statstable.get( sym_code.raw() );
           return st.totaldelegate;
       }
-
-
+//get cpu power delegated to a user
+static asset get_cpu_del_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+      {
+          accounts accountstable( token_contract_account, owner.value );
+          const auto& ac = accountstable.get( sym_code.raw() );
+          return ac.cpupower;
+      }
 
  name get_current_payee(){
 
@@ -247,13 +252,7 @@ long double get_paying_ratio(){
 
 
 
-//get cpu power delegated to a user
-        static asset get_cpu_del_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
-         {
-            accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw() );
-            return ac.cpupower;
-        }
+
 //----------------------------------------------------------------------------------------------------------------
 
 
@@ -480,10 +479,7 @@ long double get_paying_ratio(){
 
   }
 
-  
-  
-  
-  void update_global_stake(name user, asset stakechange){
+  void update_global_stake(){
 
    
     delstake_stat globalstake(get_self(),get_self().value);
@@ -493,28 +489,12 @@ long double get_paying_ratio(){
 
     globalstake.modify( st2, same_payer, [&]( auto& s ) {
 
-            s.totaldelstaked = get_current_stake();
+            s.totaldelstaked = get_ecpu_delstake(name{"cpumintofeos"},asset(0, symbol("ECPU", 8)).symbol.code());//find total stake of ECPU
 
     });
 
   }
 
-  void update_global_unstake(name user, asset stakechange){
-
-    
-    delstake_stat globalstake(get_self(),get_self().value);
-    auto existing = globalstake.find(get_self().value);
-    const auto& st = *existing;
-
-    asset ecpudelegated = get_cpu_del_balance(name{"cpumintofeos"}, user, symbol_code("ECPU") );
-
-        
-    globalstake.modify( st, same_payer, [&]( auto& s ) {
-
-        s.totaldelstaked = get_current_stake();
-
-    });
-  }
 
   asset get_current_stake(){
 
