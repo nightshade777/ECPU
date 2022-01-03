@@ -20,7 +20,7 @@ CONTRACT powerupcalc1 : public contract {
 //BELOW FROM EOSIO.SYSTEM.HPP PERTAINING TO POWERUP SYSTEM
 //NEEDED IN ORDER TO FIND SPOT PRICE OF CPU
 
- static constexpr int64_t powerup_frac = 1'000'000'000'000'000ll;  // 1.0 = 10^15 WARNING CONVERTED FROM INLINE TO STATC TO AVOID ERROR
+ static constexpr int64_t powerup_frac = 1'000'000'000'000'000ll;                
  static constexpr uint32_t seconds_per_day       = 24 * 3600;
 
  struct powerup_state_resource {
