@@ -4,6 +4,28 @@
     "types": [],
     "structs": [
         {
+            "name": "account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "delegated",
+                    "type": "asset"
+                },
+                {
+                    "name": "undelegating",
+                    "type": "asset"
+                },
+                {
+                    "name": "cpupower",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "proxies",
             "base": "",
             "fields": [
@@ -38,6 +60,11 @@
                     "type": "name"
                 }
             ]
+        },
+        {
+            "name": "setwinner",
+            "base": "",
+            "fields": []
         },
         {
             "name": "vote",
@@ -83,12 +110,24 @@
             "ricardian_contract": ""
         },
         {
+            "name": "setwinner",
+            "type": "setwinner",
+            "ricardian_contract": ""
+        },
+        {
             "name": "vote",
             "type": "vote",
             "ricardian_contract": ""
         }
     ],
     "tables": [
+        {
+            "name": "accounts",
+            "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
         {
             "name": "proxies",
             "type": "proxies",
