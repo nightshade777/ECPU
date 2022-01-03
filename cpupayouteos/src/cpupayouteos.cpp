@@ -177,11 +177,6 @@ void cpupayouteos::intdelegatee(name user){
          set_next_round(); //iterate to next payee and setup next round
          return;
      }
-     else if (userlastdelegate > (current_time_point().sec_since_epoch() - twelve_hours)){
-         set_next_round(); //iterate to next payee and setup next round
-         return;
-     }
-
      else { //set last paid time to now
   
          update_last_paid(payee);

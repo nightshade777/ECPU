@@ -197,7 +197,6 @@ static asset get_cpu_del_balance( const name& token_contract_account, const name
         delegatee.modify( st, same_payer, [&]( auto& s ) {
                 
                 s.delegatetime = current_time_point().sec_since_epoch();
-                s.lastpaytime = current_time_point().sec_since_epoch();
                 s.ecpudelegated = s.ecpudelegated + value; 
         });
     }
