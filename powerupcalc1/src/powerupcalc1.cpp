@@ -12,7 +12,7 @@ ACTION powerupcalc1::calculate(name user, asset eosinput) {
   eosinput = eosinput - asset(2, symbol("EOS", 4));// alignement to make sure fee is not greater than desired expenditure 
   
   if (eosinput.amount > 100){
-  eosinput = eosinput *95/100;// account for 5% slippage for all purchases greater than 0.0100 EOS
+  eosinput = eosinput *98/100;// account for 2% slippage for all purchases greater than 0.0100 EOS
   }
 
 
@@ -33,14 +33,19 @@ ACTION powerupcalc1::calculate(name user, asset eosinput) {
       }
   }
 
+ACTION powerupcalc1::clearbal(name user){
 
+     asset remaining = get_balance(name{"eosio.token"}, name{"powerupcalc1"}, symbol_code("EOS"));
+
+     action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+            std::make_tuple(get_self(), name{"ecpulpholder"}, remaining, std::string(""))).send();
+
+
+}
    [[eosio::on_notify("eosio.token::transfer")]] void powerupcalc1::buypowerup(name from, name to, asset quantity, std::string memo){
 
      //convert memo to account name
      // run eos amount through calculate
-       if (from == name{"eosio.stake"}){
-            return;
-        }
 
         if ((memo == "refill") || (from == get_self())){
             return;
@@ -50,6 +55,10 @@ ACTION powerupcalc1::calculate(name user, asset eosinput) {
 
                 return;
         }
+
+     
+            
+     
 
      name user = name{memo};
 

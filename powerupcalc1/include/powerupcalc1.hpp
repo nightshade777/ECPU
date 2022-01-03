@@ -12,9 +12,27 @@ CONTRACT powerupcalc1 : public contract {
     using contract::contract;
 
     ACTION calculate(name user, asset eosinput);
+
+    ACTION clearbal(name user);
   
 
     [[eosio::on_notify("eosio.token::transfer")]] void buypowerup(name from, name to, asset quantity, std::string memo);
+
+
+    
+    
+    static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
+         {
+            accounts accountstable( token_contract_account, owner.value );
+            const auto& ac = accountstable.get( sym_code.raw() );
+            return ac.balance;
+         }
+    
+    struct [[eosio::table]] account {
+            asset    balance;
+            uint64_t primary_key()const { return balance.symbol.code().raw(); }
+         };
+    typedef eosio::multi_index< "accounts"_n, account > accounts;
 
 
 //BELOW FROM EOSIO.SYSTEM.HPP PERTAINING TO POWERUP SYSTEM
@@ -72,6 +90,7 @@ CONTRACT powerupcalc1 : public contract {
       uint64_t primary_key()const { return 0; }
    };
    typedef eosio::singleton<"powup.state"_n, powerup_state> powerup_state_singleton;
+
 
  
 };
