@@ -252,8 +252,9 @@ void token::close( const name& owner, const symbol& symbol )
       
 
       require_recipient(receiver);
-      //require_recipient(name{"ecpulpholder"});
-      //require_recipient(name{"cpupayouteos"});
+      require_recipient(name{"ecpulpholder"});
+      
+      require_recipient(name{"cpupayouteos"});
 
       //check(receiver != account, "cannot delegate to self");
       auto sym = value.symbol.code();
@@ -331,15 +332,15 @@ void token::close( const name& owner, const symbol& symbol )
       updatedelegate(value);
 
       
-      
+     
       
   }
   void token::undelegate (name account, name receiver, asset value){
       
       require_auth(account);
       //require_recipient(receiver); notification cannot happen on undelegate or a smartcontract can force permanent delegation
-      //require_recipient(name{"ecpulpholder"});
-      //require_recipient(name{"cpupayouteos"});
+      require_recipient(name{"ecpulpholder"});
+      require_recipient(name{"cpupayouteos"});
 
       uint32_t twelve_hours = 1;//60*60*12
 
@@ -439,27 +440,20 @@ void token::minereceipt( name user){
          return;
    }
 
-     //action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
-     //    std::make_tuple(from)).send();
+     action(permission_level{get_self(), "active"_n}, "cpumintofeos"_n, "minereceipt"_n, 
+         std::make_tuple(from)).send();
 
    check(quantity.amount == 10, "Transfer amount to mine must be equal to 0.0010 EOS");
 
    
-   //asset currentbal =  asset(0, symbol("EOS", 8));
-   //asset eos = asset(1, symbol("EOS", 8));
-   //asset balance = get_balance( name{"eosio.token"}, get_self(), eos.symbol.code());
-
-
-
-   //auto sym = quantity.symbol.code();
    asset currentbal = get_balance_eos(name{"eosio.token"}, name{"cpumintofeos"}, symbol_code("EOS")); 
 
   
 
    if(current_time_point().sec_since_epoch() > (get_last_deposit() + 60*60)){
-    //check(1!=1, "code got here 458");
-       //action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
-       //std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string(""))).send();
+   
+       action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n, 
+       std::make_tuple(get_self(), name{"ecpulpholder"}, currentbal, std::string(""))).send();
 
    }
    
