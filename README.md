@@ -1,11 +1,16 @@
 # ECPU
 Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS, powered by deflationary EOS mining 
 
+**PROJECT DESCRIPTION**
+
+ECPU is aiming to take the next step to abstract away CPU and NET for users on the EOS mainnet, while also adding deflationary pressure to EOS by locking EOS into REX permanently. An initial EOS pool (staked to REX permanently) uses rewards to purchase CPU/NET for staked ECPU, the unused EOS reserved for unstaked ECPU is sent to REX to be locked permanently and to compound the permanent pool. ECPU is mined by providing EOS to the permanent REX pool.
+
+Staking ECPU allows you to receive powerups automatically every 12 hours. You can also delegate your ECPU to multiple accounts. This allows for a seemless experience for users with delegated ECPU and can be integrated in a wallet agnostic manner. The CPU/NET rentals distribution rely on no infrastructure whatsoever and is driven completely by on-chain activity (0.0010 eos mining trasfers with no refund). The powerups are funded by stake rewards received by the eos pool permanently staked to REX. The EOS corrresponding to unstaked/undelegated ECPU resides in a reservoir pool that will be reserved in case a user delegates mid-round, and this unused reservoir will be reinvested into the permanent REX pool at the end of the round.
+
+ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specified in round one has been built and is currently being tested on the Jungle3 eosio testnet.
+
 
 ![image](https://user-images.githubusercontent.com/51843516/147799301-e03cf885-2b18-4a4d-b954-d4220e8a02c9.png)
-
-
-
 
 **DIVISION OF CONTRACT FUNCTIONS**
 
@@ -21,17 +26,5 @@ Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management Syste
 
 
 
-
-
-**PROJECT DESCRIPTION**
-
-ECPU is aiming to take the next step to abstract away CPU and NET for users on the EOS mainnet, while also adding deflationary pressure to EOS by locking EOS into REX permanently. 
-
-Staking ECPU allows you to receive powerups automatically every 12 hours. You can also delegate your ECPU to multiple accounts. This allows for a seemless experience for users with delegated ECPU and can be integrated in a wallet agnostic manner. The CPU/NET rentals distribution rely on no infrastructure whatsoever and is driven completely by on-chain activity (0.0010 eos mining trasfers with no refund). 
-
-
-The powerups are funded by stake rewards received by the eos pool permanently staked to Rex. The EOS corrresponding to unstaked/undelegated ECPU resides in a reservoir pool that will be reserved in case a user delegates mid-round, and this unused reservoir will be reinvested into the permanent Rex pool at the end of the round.
-
-ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specified in round one has been built and is currently being tested on the Jungle3 eosio testnet.
 
 
