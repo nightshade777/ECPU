@@ -1,0 +1,2 @@
+# PoWMiner
+Simple, easy to use POW miner.  Ned's code for his miners is complex and obfuscated so I made this at the request of several community members.  The initialize feature still has some issues on desktop for some reason, but will work fine on mobile with TokenPocket.  Currently using EOSJS1.6.  If anyone is good with the newest version of EOSJS and could help update to that version, we would all be grateful :) Updating to the newest version should take care of the initialization issue too.
