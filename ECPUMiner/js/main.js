@@ -744,8 +744,84 @@ function set_circle_element(elm, value) {
 
 
                         document.getElementById('dotransaction_bundle').innerHTML = "Mining Transactions X " + val;
+
                         
-                    } 
+}
+
+function format_eos_amount(amount) {
+
+    betamount = amount + "";
+
+    var n = betamount.indexOf(".");
+
+    if (n == -1) {
+        betamount = betamount + ".0000";
+
+        n = betamount.indexOf(".");
+    }
+
+    var l = betamount.length;
+    diff = l - n - 1;
+
+    amount2 = betamount;
+    for (i = diff; i < 4; i++)
+        amount2 += '0';
+
+    amount2 = parseFloat(amount2).toFixed(4);
+
+    return (amount2);
+
+}
+                    // format_eos_amount
+function rentCPUNETeos() {
+
+    var transfer_amount = document.getElementById('resourcesInput').value;
+    alert("Send " + transfer_amount + " EOS for Powerup/Rent CPU/NET");
+    transfer_amount = format_eos_amount(transfer_amount);
+    transfer_amount = transfer_amount + " EOS";
+
+    eosobject.transaction({
+        actions: [{
+            account: 'eosio.token',
+            //      name: 'admin2',
+            name: 'transfer',
+            authorization: [{
+                actor: scatter_account,
+                permission: "active"
+            }],
+
+            data: {
+                "from": scatter_account,
+                "to": 'powerupcalc1',
+                "quantity": transfer_amount,
+                "memo": scatter_account
+            }
+
+        }]
+    }).then(result => {
+
+        console.log("Success!!!");
+
+        alert('Success!');
+
+        return;
+    }).catch(error => {
+        console.log("jsonerr: " + error);
+
+        err = JSON.parse(error);
+        console.log("Error Transaction " + err);
+
+        alert('Error: ' + err.error.details[0].message);
+
+        return;
+
+    });
+
+
+}
+
+
+
 
                 
                 
