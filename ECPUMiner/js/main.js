@@ -234,10 +234,10 @@ function set_circle_element(elm, value) {
                         var targetMiningRate = document.getElementById('target_mining_rate').value;
                         
 
-                        var miningRate1 = (ecpu_mining_supply / 40000);
+                        var miningRate1 = (ecpu_mining_supply / 10000);
                         miningRate1 = parseFloat(miningRate1).toFixed(8);
 
-                        var eos_amount = "0.0001 EOS";
+                        var eos_amount = "0.0010 EOS";
 
                         var eos_memo = "ECPU is Eternal CPU";
                         //   var eos_receive_account = "eosiopowcoin";
@@ -501,7 +501,7 @@ function set_circle_element(elm, value) {
                                 document.getElementById('dotransaction_bundle').style.visibility = "visible";
 
 
-                                    var mining_rate = (ecpu_mining_supply / 40000);
+                                    var mining_rate = (ecpu_mining_supply / 10000);
                                     mining_rate = parseFloat(mining_rate).toFixed(8);
 
 
@@ -596,7 +596,7 @@ function set_circle_element(elm, value) {
                     ScatterJS.plugins(new ScatterEOS());
 
                     //var scatter_host = 'eos.greymass.com';
-                    var scatter_host = 'api.main.alohaeos.com';
+                    var scatter_host = 'jungle3.cryptolions.io'; //use aloha for mainnet
                     /*
                                 const network = ScatterJS.Network.fromJson({
                                     blockchain: 'eos',
@@ -609,7 +609,8 @@ function set_circle_element(elm, value) {
                     */
                     const network = ScatterJS.Network.fromJson({
                         blockchain: 'eos',
-                        chainId: 'aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906',
+                       // chainId: 'aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906', //mainnet
+                        chainId: '2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840',
                         host: scatter_host,
                         port: 443,
                         protocol: 'https'
