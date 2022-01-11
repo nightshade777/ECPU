@@ -610,7 +610,7 @@ function set_circle_element(elm, value) {
                     const network = ScatterJS.Network.fromJson({
                         blockchain: 'eos',
                        // chainId: 'aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906', //mainnet
-                        chainId: '2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840',
+                        chainId: '2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840', //jungle
                         host: scatter_host,
                         port: 443,
                         protocol: 'https'
@@ -795,6 +795,52 @@ function rentCPUNETeos() {
                 "to": 'powerupcalc1',
                 "quantity": transfer_amount,
                 "memo": scatter_account
+            }
+
+        }]
+    }).then(result => {
+
+        console.log("Success!!!");
+
+        alert('Success!');
+
+        return;
+    }).catch(error => {
+        console.log("jsonerr: " + error);
+
+        err = JSON.parse(error);
+        console.log("Error Transaction " + err);
+
+        alert('Error: ' + err.error.details[0].message);
+
+        return;
+
+    });
+
+
+}
+
+function buyRAMeos() {
+
+    var transfer_amount = document.getElementById('resourcesInput').value;
+    alert("Send " + transfer_amount + " EOS for RAM Purchase");
+    transfer_amount = format_eos_amount(transfer_amount);
+    transfer_amount = transfer_amount + " EOS";
+
+    eosobject.transaction({
+        actions: [{
+            account: 'eosio',
+            //      name: 'admin2',
+            name: 'buyram',
+            authorization: [{
+                actor: scatter_account,
+                permission: "active"
+            }],
+
+            data: {
+                "payer": scatter_account,
+                "receiver": scatter_account,
+                "quant": transfer_amount
             }
 
         }]
