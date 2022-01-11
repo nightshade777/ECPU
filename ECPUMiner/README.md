@@ -1,2 +1,2 @@
-# PoWMiner
-Simple, easy to use POW miner.  Ned's code for his miners is complex and obfuscated so I made this at the request of several community members.  The initialize feature still has some issues on desktop for some reason, but will work fine on mobile with TokenPocket.  Currently using EOSJS1.6.  If anyone is good with the newest version of EOSJS and could help update to that version, we would all be grateful :) Updating to the newest version should take care of the initialization issue too.
+# ECPU Miner
+Simple, easy to use ECPU miner.  Transfers of 0.0010 EOS will mine a reward of 0.01% of the  baance of cpumintofeos. 1 ECPU is created every 3 minutes and issued into the balance of cpumintofeos.
