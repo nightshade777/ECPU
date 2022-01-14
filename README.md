@@ -1,5 +1,5 @@
-![ecpu_final](https://user-images.githubusercontent.com/51843516/149553200-f33150eb-a972-4782-9904-e5c590ca5dae.jpg)
-![ecpu_final_2](https://user-images.githubusercontent.com/51843516/149553318-b374dad9-9337-4458-816a-d87a20412729.jpg)
+![image](https://user-images.githubusercontent.com/51843516/149553496-6220c6cb-cdc1-40ce-8e3e-6dcee561c008.png)
+
 
 # ECPU
 Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS, powered by deflationary EOS mining 
