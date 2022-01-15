@@ -20,8 +20,12 @@ ACTION ecpuvotereos::regproxy(name user, name proxy, name proxysender) {
  
 }
 
-ACTION ecpuvotereos::vote(name user, asset quantity, name proxy) {
+ACTION ecpuvotereos::vote(name user, name proxy) {
   require_auth(user);
+  //Three cases:
+  //1. User has never voted before
+  //2. User has voted before and is refreshing votes for same proxy
+  //3. User has voted before and is switching to new proxy
 
 
   //check if proxy is valid, (if exists)
@@ -32,9 +36,11 @@ ACTION ecpuvotereos::vote(name user, asset quantity, name proxy) {
 
   //check if user balance is atleast quantity
    asset ecpu_balance = get_balance(name{"cpumintofeos"}, user, symbol_code("ECPU"));
-   check (quantity.amount < ecpu_balance.amount, "Cannot vote with more than balance");
+   asset prev_delegated;
+   asset delta;
+   //check (quantity.amount < ecpu_balance.amount, "Cannot vote with more than balance");
 
-  
+
 
   voters_table votertable(get_self(), user.value);
   auto voter_it = votertable.find(user.value);
@@ -43,13 +49,13 @@ ACTION ecpuvotereos::vote(name user, asset quantity, name proxy) {
 
           votertable.emplace( user, [&]( auto& a ){
                 a.user = user;
-                a.delegated = quantity;
+                a.delegated = ecpu_balance;
                 a.proxy = proxy;
           });
 
           proxytable.modify(proxy_it, same_payer, [&]( auto& a ){
 
-              a.delegated += quantity; 
+              a.delegated += ecpu_balance; 
 
           });
   }
@@ -58,9 +64,18 @@ ACTION ecpuvotereos::vote(name user, asset quantity, name proxy) {
 
           //check if (userbalance - existing votes) is atleast balance
           
-          votertable.modify(voter_it, same_payer, [&]( auto& a ){ //add votes to existing proxy
-                check((ecpu_balance.amount - a.delegated.amount)>= quantity.amount, "not enough ECPU to add this number of votes");
-                a.delegated += quantity;
+          votertable.modify(voter_it, same_payer, [&]( auto& a ){ //refresh votes to existing proxy
+                
+                prev_delegated = a.delegated;
+                delta = ecpu_balance - prev_delegated;
+
+                a.delegated = ecpu_balance;
+          });
+
+          proxytable.modify(proxy_it, same_payer, [&]( auto& a ){
+
+              a.delegated += delta; 
+
           });
 
           //add to proxt table
@@ -81,14 +96,14 @@ ACTION ecpuvotereos::vote(name user, asset quantity, name proxy) {
 
           proxytable.modify(proxy_it, same_payer, [&]( auto& a ){
 
-              a.delegated += quantity; 
+              a.delegated += ecpu_balance; 
 
           });
           
 
           votertable.modify(voter_it, same_payer, [&]( auto& a ){ //remove votes from exisitng proxy and add votes here
                 a.proxy = proxy;
-                a.delegated = quantity;
+                a.delegated = ecpu_balance;
           });
 
           //remove votes from proxy table and add to new prox table
@@ -122,6 +137,7 @@ ACTION ecpuvotereos::setwinner(){
 
 [[eosio::on_notify("cpumintofeos::transfer")]] void ecpuvotereos::ecputransfer(name from, name to, asset quantity, std::string memo){
 
+/**
       //find if from is a voter, else return
       //check if votes < current balance, if so remove votes to equal balance 
 
@@ -143,7 +159,7 @@ ACTION ecpuvotereos::setwinner(){
 
       }
 
-
+**/
 }
 
 

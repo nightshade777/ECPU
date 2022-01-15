@@ -10,7 +10,7 @@ CONTRACT ecpuvotereos : public contract {
 
     ACTION regproxy(name user, name proxy, name proxysender); //add proxy and associated proxy rewards sending account to proxies table
 
-    ACTION vote(name user, asset amount, name proxy);
+    ACTION vote(name user, name proxy);
 
     ACTION setwinner();
 
