@@ -1,7 +1,7 @@
 ![image](https://user-images.githubusercontent.com/51843516/149553496-6220c6cb-cdc1-40ce-8e3e-6dcee561c008.png)
 
 
-# ECPU
+# ECPU - Eternal CPU
 Feeless, Decentralized, and Autonomous Wallet-agnostic Resource Management System on EOS, powered by deflationary EOS mining 
 
 **PROJECT DESCRIPTION**
