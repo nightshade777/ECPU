@@ -13,7 +13,7 @@ Staking ECPU allows you to receive powerups automatically every 12 hours. You ca
 ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specified in round one has been built and is currently being tested on the Jungle3 eosio testnet.
 
 
-![image](https://user-images.githubusercontent.com/51843516/149643083-1cef6aa1-8e16-4436-a0ad-7bb8bc62f3d0.png)
+
 ![image](https://user-images.githubusercontent.com/51843516/151649552-f3aa08ae-e279-4dbb-bcbb-6e57c0728acc.png)
 
 
