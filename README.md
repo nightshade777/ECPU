@@ -1,5 +1,3 @@
-![ecpu rudemudcrab_low res](https://user-images.githubusercontent.com/51843516/151649695-2baa0bd4-c0aa-4620-b574-51c2c6bdff75.PNG)
-
 ![ecpu rudemudcrab_lowest res](https://user-images.githubusercontent.com/51843516/151649732-6614f78a-633d-4b52-9989-bd6646ab2103.PNG)
 
 
