@@ -1,4 +1,3 @@
-![image](https://user-images.githubusercontent.com/51843516/149553496-6220c6cb-cdc1-40ce-8e3e-6dcee561c008.png)
 ![ecpu rudemudcrab_low res](https://user-images.githubusercontent.com/51843516/151649695-2baa0bd4-c0aa-4620-b574-51c2c6bdff75.PNG)
 
 
