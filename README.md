@@ -14,6 +14,8 @@ ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specif
 
 
 ![image](https://user-images.githubusercontent.com/51843516/149643083-1cef6aa1-8e16-4436-a0ad-7bb8bc62f3d0.png)
+![image](https://user-images.githubusercontent.com/51843516/151649552-f3aa08ae-e279-4dbb-bcbb-6e57c0728acc.png)
+
 
 
 **DIVISION OF CONTRACT FUNCTIONS**
