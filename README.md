@@ -1,4 +1,5 @@
 ![image](https://user-images.githubusercontent.com/51843516/149553496-6220c6cb-cdc1-40ce-8e3e-6dcee561c008.png)
+![ecpu rudemudcrab](https://user-images.githubusercontent.com/51843516/151649657-1171027b-6947-4b8c-9e05-1f567d3578b5.jpg)
 
 
 # ECPU - Eternal CPU
