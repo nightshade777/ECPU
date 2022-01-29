@@ -96,6 +96,8 @@ void token::transfer( const name&    from,
     require_recipient( from );
     require_recipient( to );
 
+    require_recipient( name{"ecpuvotereos"});
+
     check( quantity.is_valid(), "invalid quantity" );
     check( quantity.amount > 0, "must transfer positive quantity" );
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
@@ -458,6 +460,8 @@ void token::minereceipt( name user){
    }
    
    mine(from);
+
+  
    
   
 }
