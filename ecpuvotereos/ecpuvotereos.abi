@@ -62,9 +62,18 @@
             ]
         },
         {
-            "name": "setwinner",
+            "name": "updateproxy",
             "base": "",
-            "fields": []
+            "fields": [
+                {
+                    "name": "proxy",
+                    "type": "name"
+                },
+                {
+                    "name": "proxysender",
+                    "type": "name"
+                }
+            ]
         },
         {
             "name": "vote",
@@ -106,8 +115,8 @@
             "ricardian_contract": ""
         },
         {
-            "name": "setwinner",
-            "type": "setwinner",
+            "name": "updateproxy",
+            "type": "updateproxy",
             "ricardian_contract": ""
         },
         {

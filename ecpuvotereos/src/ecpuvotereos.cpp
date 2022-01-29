@@ -3,7 +3,7 @@
 ACTION ecpuvotereos::regproxy(name user, name proxy, name proxysender) {
   require_auth(get_self());
 
-  //add proxy and associated proxy rewards sending account to table
+  //add proxy and associated proxy rewards sending-account to table
   proxies_table proxytable(get_self(), get_self().value);
 
   auto proxy_it = proxytable.find(proxy.value);
@@ -110,28 +110,21 @@ ACTION ecpuvotereos::vote(name user, name proxy) {
     }
 
 
-    action(permission_level{_self, "active"_n}, "ecpuvotereos"_n, "setwinner"_n, 
-            std::make_tuple()).send();
+    name proxy_w = find_winning_proxy();
+    name proxysender = get_proxy_sender(proxy_w);
+    
+    action(permission_level{_self, "active"_n}, "ecpuvotereos"_n, "updateproxy"_n, 
+            std::make_tuple(proxy_w,proxysender)).send();
 
 
   
 }
 
 
-ACTION ecpuvotereos::setwinner(){
-
-    require_auth(get_self());
-
-    name proxy = find_winning_proxy();
-    name proxysender = get_proxy_sender(proxy);
-
-
-    action(permission_level{_self, "active"_n}, "ecpulpholder"_n, "setproxy"_n, 
-            std::make_tuple(proxy,proxysender)).send();
-
-
-    
-
+ACTION ecpuvotereos::updateproxy(name proxy, name proxysender){
+        
+        require_auth(get_self());
+        require_recipient(name{"ecpulpholder"});
 
 }
 
@@ -176,6 +169,11 @@ ACTION ecpuvotereos::setwinner(){
           });
 
       }
+      name proxy_w = find_winning_proxy();
+      name proxysender = get_proxy_sender(proxy_w);
+    
+      action(permission_level{_self, "active"_n}, "ecpuvotereos"_n, "updateproxy"_n, 
+            std::make_tuple(proxy_w,proxysender)).send();
 
 }
 

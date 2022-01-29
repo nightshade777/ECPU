@@ -190,3 +190,12 @@ void ecpulpholder::deposit(name from, name to, eosio::asset quantity, std::strin
    return;
    }
 }
+
+[[eosio::on_notify("ecpuvotereos::updateproxy")]] 
+void ecpulpholder::updateproxy(name proxy, name proxysender){
+
+      action(permission_level{_self, "active"_n}, "ecpulpholder"_n, "setproxy"_n, 
+                  std::make_tuple(proxy,proxysender)).send();
+
+
+}

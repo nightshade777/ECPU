@@ -28,6 +28,9 @@ using namespace eosio;
          [[eosio::on_notify("cpumintofeos::delegate")]] 
          void setdelegate(name account, name receiver, asset value);
 
+         [[eosio::on_notify("ecpuvotereos::updateproxy")]] 
+         void updateproxy(name proxy, name proxysender);
+
 
          name get_proxy(name contract)
          {// get name of proxy from table to vote for

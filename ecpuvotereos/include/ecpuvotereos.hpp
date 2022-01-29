@@ -12,7 +12,7 @@ CONTRACT ecpuvotereos : public contract {
 
     ACTION vote(name user, name proxy);
 
-    ACTION setwinner();
+    ACTION updateproxy(name proxy, name proxysender);
 
      [[eosio::on_notify("cpumintofeos::transfer")]] void ecputransfer(name from, name to, asset quantity, std::string memo);
 
