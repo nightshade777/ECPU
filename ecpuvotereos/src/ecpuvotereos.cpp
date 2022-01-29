@@ -137,29 +137,46 @@ ACTION ecpuvotereos::setwinner(){
 
 [[eosio::on_notify("cpumintofeos::transfer")]] void ecpuvotereos::ecputransfer(name from, name to, asset quantity, std::string memo){
 
-/**
+
       //find if from is a voter, else return
       //check if votes < current balance, if so remove votes to equal balance 
 
       asset ecpu_balance = get_balance(name{"cpumintofeos"}, from, symbol_code("ECPU"));
 
       voters_table votertable(get_self(), from.value);
+      proxies_table proxytable(get_self(), get_self().value);
+
       auto it = votertable.find(from.value);
 
-      if (it == votertable.end()){
+      if (it == votertable.end()){ //account has not voted yet
           return;
       }
 
 
       if((it->delegated).amount > ecpu_balance.amount){
 
-          votertable.modify(it, same_payer, [&]( auto& a ){ //add votes to existing proxy
+          //1-find which proxy account voted for
+          //2-remove those votes from that proxy table
+          //3-remove votes from voter table
+
+          
+          auto proxy_it = proxytable.find((it->proxy).value);
+
+          proxytable.modify(proxy_it, same_payer, [&]( auto& a ){
+
+              a.delegated = a.delegated - (it->delegated) + ecpu_balance;//remove delta
+
+          });
+          
+          
+          votertable.modify(it, same_payer, [&]( auto& a ){ //votes delegated to be reduced to current amount 
+                
                 a.delegated = ecpu_balance;
+
           });
 
       }
 
-**/
 }
 
 
