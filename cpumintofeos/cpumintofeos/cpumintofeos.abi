@@ -1,0 +1,396 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                },
+                {
+                    "name": "delegated",
+                    "type": "asset"
+                },
+                {
+                    "name": "undelegating",
+                    "type": "asset"
+                },
+                {
+                    "name": "cpupower",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "accounteos",
+            "base": "",
+            "fields": [
+                {
+                    "name": "balance",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "close",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                }
+            ]
+        },
+        {
+            "name": "create",
+            "base": "",
+            "fields": [
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "maximum_supply",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "currency_stats",
+            "base": "",
+            "fields": [
+                {
+                    "name": "supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "max_supply",
+                    "type": "asset"
+                },
+                {
+                    "name": "issuer",
+                    "type": "name"
+                },
+                {
+                    "name": "prevmine",
+                    "type": "uint32"
+                },
+                {
+                    "name": "creationtime",
+                    "type": "uint32"
+                },
+                {
+                    "name": "lastdeposit",
+                    "type": "uint32"
+                },
+                {
+                    "name": "totaldelegate",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "delegate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "delegatecpu",
+            "base": "",
+            "fields": [
+                {
+                    "name": "recipient",
+                    "type": "name"
+                },
+                {
+                    "name": "cpupower",
+                    "type": "asset"
+                },
+                {
+                    "name": "delegatetime",
+                    "type": "uint32"
+                },
+                {
+                    "name": "undelegatingecpu",
+                    "type": "asset"
+                },
+                {
+                    "name": "undelegatetime",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "destroyacc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "token",
+                    "type": "asset"
+                },
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "delegaterow",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "destroytoken",
+            "base": "",
+            "fields": [
+                {
+                    "name": "token",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "issue",
+            "base": "",
+            "fields": [
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "minereceipt",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "open",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "symbol",
+                    "type": "symbol"
+                },
+                {
+                    "name": "ram_payer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "open2",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "open3",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "recipient",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "retire",
+            "base": "",
+            "fields": [
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "transfer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "from",
+                    "type": "name"
+                },
+                {
+                    "name": "to",
+                    "type": "name"
+                },
+                {
+                    "name": "quantity",
+                    "type": "asset"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "undelegate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "receiver",
+                    "type": "name"
+                },
+                {
+                    "name": "value",
+                    "type": "asset"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "close",
+            "type": "close",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "create",
+            "type": "create",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delegate",
+            "type": "delegate",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "destroyacc",
+            "type": "destroyacc",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "destroytoken",
+            "type": "destroytoken",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "issue",
+            "type": "issue",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "minereceipt",
+            "type": "minereceipt",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open",
+            "type": "open",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open2",
+            "type": "open2",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "open3",
+            "type": "open3",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "retire",
+            "type": "retire",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "undelegate",
+            "type": "undelegate",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "accounteos",
+            "type": "accounteos",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "accounts",
+            "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "delegates",
+            "type": "delegatecpu",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "stat",
+            "type": "currency_stats",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}
