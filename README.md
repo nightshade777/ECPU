@@ -31,6 +31,8 @@ ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specif
 
 **ecpuvotereos**: handles the token-weighted voting for proxy selection. Receives transfer notifications from **cpumintofeos** to remove votes when users transfer tokens that have been utilized for voting. The delegating or staking of tokens is not required for voting, only holding in wallet. Voting action will vote with all ECPU balance, no amount input required to be specified in the smartcontract action.
 
+Currently LP system is being integrated
+
 
 
 
