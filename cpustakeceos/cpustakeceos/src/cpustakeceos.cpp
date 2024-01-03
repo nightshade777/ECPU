@@ -130,7 +130,7 @@ void token::transfer( const name&    from,
 
     if (to == get_self()){
 
-         check(quantity >= asset(10000, symbol("SAFE", 8)),"send at least 0.00010000 SAFE");
+         check(quantity >= asset(10000, symbol("CEOS", 4)),"send at least 1.0000 CEOS");
          
          std::string user = from.to_string();
 
@@ -271,17 +271,18 @@ void token::deposit(name from, name to, eosio::asset quantity, std::string memo)
   [[eosio::on_notify("cpumintofeos::transfer")]]
   void token::reward(name from, name to, eosio::asset quantity, std::string memo){
 
+      if (to != get_self()){
+
+         return;
+      }
+
+      distribute_reward(quantity);
+
+
   }
+    
 
 
 
-
-
-
-
-
-
-
-         
 
 } /// namespace eosio

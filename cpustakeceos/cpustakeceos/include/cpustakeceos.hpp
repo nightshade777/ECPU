@@ -165,6 +165,48 @@ namespace eosio {
             return itr->deposittime.utc_seconds;
          }
 
+         void distribute_reward(asset ecpu_in) {
+
+            deposit_table deposits(_self, _self.value);
+
+            // Calculate the total EOS deposited
+            asset total_eos_deposited = asset(0, symbol("EOS", 4));
+            for (auto& deposit : deposits) {
+               total_eos_deposited += deposit.eosdeposit;
+            }
+
+            check(total_eos_deposited.amount > 0, "No EOS deposits found");
+
+            // Distribute the EPCU reward based on each user's deposit proportion
+            for (auto& deposit : deposits) {
+               double user_share = (double)deposit.eosdeposit.amount / (double)total_eos_deposited.amount;
+               asset user_reward = asset(user_share * ecpu_in.amount, ecpu_in.symbol);
+
+            // Update the claimable asset for each user
+               deposits.modify(deposit, _self, [&](auto& record) {
+                  record.claimable += user_reward;
+               });
+            }
+         }
+
+         asset get_rex_for_eos(asset eos_amount) {
+            check(eos_amount.symbol == symbol("EOS", 4), "Only EOS amounts are accepted");
+
+            rex_pool_s rex_pool_table("eosio"_n, "eosio"_n.value);
+            auto rex_pool = rex_pool_table.get();
+
+            // Calculate the current rate of REX
+            double current_rex_rate = static_cast<double>(rex_pool.total_rex.amount) / rex_pool.total_lendable.amount;
+
+            // Calculate the amount of REX that corresponds to the given EOS amount
+            int64_t rex_amount = static_cast<int64_t>(eos_amount.amount * current_rex_rate);
+
+            return asset(rex_amount, symbol("REX", 4));
+         }
+
+
+
+
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
          using retire_action = eosio::action_wrapper<"retire"_n, &token::retire>;
@@ -178,6 +220,8 @@ namespace eosio {
             asset  eosdeposit;    // The amount of EOS deposited
             asset  initialrex;    // The initial amount of REX corresponding to the EOS deposit
             time_point_sec deposittime; // The time when the deposit was made
+
+            asset claimable; //ECPU amount claimable
 
             // Primary key for the table to be indexed by user account
             uint64_t primary_key() const { return account.value; }
