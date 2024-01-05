@@ -48,6 +48,9 @@ namespace eosio {
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
 
+         [[eosio::action]]
+         void claim( const name& user);
+
 
          [[eosio::on_notify("eosiotoken::transfer")]]
          void deposit(name from, name to, eosio::asset quantity, std::string memo);
@@ -78,7 +81,7 @@ namespace eosio {
                return rex_it->rex_balance;
          }
 
-         void set_initial_rex(name user, asset rexbal){
+         void add_deposit(name user, asset deposit){
          //save initial rex amount of user into table
             deposit_table deposits(_self, _self.value);
             auto itr = deposits.find(user.value);
@@ -86,76 +89,31 @@ namespace eosio {
             if(itr == deposits.end()) {
                deposits.emplace(_self, [&](auto& dep) {
                   dep.account = user;
-                  dep.initialrex = rexbal;
-                  // Initialize other fields as necessary, e.g., eosdeposit, deposittime
+                  dep.deposit = deposit;
+                  dep.deposittime = current_time_point();  // Set to current time
+                  dep.claimable = asset(0, symbol("ECPU", 8));
+
                });
             }       
             else {
                deposits.modify(itr, _self, [&](auto& dep) {
-                  dep.initialrex = rexbal;
+                  dep.deposit += deposit;
+                  dep.deposittime = current_time_point();  // Set to current time
                });
             }
-         }
-
-         void modify_rex(name user, asset rexbal, bool add) {
-            deposit_table deposits(_self, _self.value);
-            auto itr = deposits.find(user.value);
-
-            if(itr == deposits.end()) {
-               // If entry does not exist, use set_initial_rex
-               set_initial_rex(user, rexbal);
-            }       
-            else {
-               // Modify existing entry
-               deposits.modify(itr, _self, [&](auto& dep) {
-                  if(add) {
-                  dep.initialrex += rexbal;
-                  } 
-                  else {
-                  dep.initialrex -= rexbal;
-                  }
-               });
-            }
-         }
-
-  // Helper function to get the initial amount of REX corresponding to a user's deposit
-         asset get_stored_rex(name user) {
-         //gets rex from deposits from internal table
-            deposit_table deposits(_self, _self.value);
-            auto itr = deposits.find(user.value);
-            check(itr != deposits.end(), "No deposit found for the user");
-            return itr->initialrex;
          }
 
   // Helper function to get the initial EOS deposit of a user
-         asset get_initial_deposit(name user) {
+         asset get_deposit(name user) {
             
             deposit_table deposits(_self, _self.value);
             auto itr = deposits.find(user.value);
             check(itr != deposits.end(), "No deposit found for the user");
-            return itr->eosdeposit;
+            return itr->deposit;
          }
 
   // Helper function to get the deposit time of a user's deposit
          
-         void set_deposit_time(name user, uint64_t deposit_time){
-            
-            deposit_table deposits(_self, _self.value);
-            auto itr = deposits.find(user.value);
-
-            if(itr == deposits.end()) {
-               deposits.emplace(_self, [&](auto& dep) {
-                  dep.account = user;
-                  dep.deposittime = time_point_sec(deposit_time);
-            // Initialize other fields as necessary
-               });
-            } 
-            else {
-               deposits.modify(itr, _self, [&](auto& dep) {
-                  dep.deposittime = time_point_sec(deposit_time);
-               });
-            }
-         }
          
          uint64_t get_deposit_time(name user) {
             
@@ -172,14 +130,14 @@ namespace eosio {
             // Calculate the total EOS deposited
             asset total_eos_deposited = asset(0, symbol("EOS", 4));
             for (auto& deposit : deposits) {
-               total_eos_deposited += deposit.eosdeposit;
+               total_eos_deposited += deposit.deposit;
             }
 
             check(total_eos_deposited.amount > 0, "No EOS deposits found");
 
             // Distribute the EPCU reward based on each user's deposit proportion
             for (auto& deposit : deposits) {
-               double user_share = (double)deposit.eosdeposit.amount / (double)total_eos_deposited.amount;
+               double user_share = (double)deposit.deposit.amount / (double)total_eos_deposited.amount;
                asset user_reward = asset(user_share * ecpu_in.amount, ecpu_in.symbol);
 
             // Update the claimable asset for each user
@@ -190,6 +148,8 @@ namespace eosio {
          }
 
          asset get_rex_for_eos(asset eos_amount) {
+
+         //intent is to, when user withdraws CEOS, to calculate the needed REX to be sold to give back to the user           
             check(eos_amount.symbol == symbol("EOS", 4), "Only EOS amounts are accepted");
 
             rex_pool_s rex_pool_table("eosio"_n, "eosio"_n.value);
@@ -204,8 +164,128 @@ namespace eosio {
             return asset(rex_amount, symbol("REX", 4));
          }
 
+         asset get_eos_for_rex(asset rex_amount) {
+            check(rex_amount.symbol == symbol("REX", 4), "Only REX amounts are accepted");
 
+            rex_pool_s rex_pool_table("eosio"_n, "eosio"_n.value);
+            auto rex_pool = rex_pool_table.get();
 
+            // Calculate the current rate of REX (EOS per REX)
+            double current_rex_rate = static_cast<double>(rex_pool.total_rex.amount) / rex_pool.total_lendable.amount;
+
+            // Calculate the amount of EOS that corresponds to the given REX amount
+            // The EOS amount is the REX amount divided by the REX rate
+            int64_t eos_amount = static_cast<int64_t>(rex_amount.amount / current_rex_rate);
+
+            return asset(eos_amount, symbol("EOS", 4));
+         }
+
+         void check_and_send_excess_eos() {
+            require_auth(_self);
+
+            // Step 1: Check the contract's own REX balance
+            rex_balance_table rex_balance("eosio"_n, _self.value);
+            auto rex_it = rex_balance.find(_self.value);
+            check(rex_it != rex_balance.end(), "Contract does not have a REX balance");
+
+            // Step 2: Get the equivalent EOS value of the REX
+            asset eos_equivalent = get_eos_for_rex(rex_it->rex_balance);
+
+            // Step 3: Get the total supply of CEOS tokens
+            stats statstable("ceostoken"_n, symbol_code("CEOS").raw()); // Replace 'ceostoken' with your token contract
+            auto existing = statstable.find(symbol_code("CEOS").raw());
+            check(existing != statstable.end(), "CEOS token does not exist");
+            asset ceos_supply = existing->supply;
+
+            // Step 4: Calculate the excess EOS and send to ecpulpholder
+            if (eos_equivalent > ceos_supply) {
+            
+               action(permission_level{_self, "active"_n}, name{"eosio.token"}, "transfer"_n, 
+               std::make_tuple(get_self(), name{"ecpulpholder"}, (ceos_supply-eos_equivalent), string("deposit"))).send();
+            
+            }
+
+         }
+
+         void place_rex_order(name user, asset eos_amount) {
+         // Ensure the asset is REX
+            check(eos_amount.symbol == symbol("EOS", 4), "Must specify expected EOS amount");
+
+            rex_order_table orders(get_self(), get_self().value);
+
+            // Clear existing order (if any)
+            auto order_itr = orders.begin();
+            check(order_itr == orders.end(), "An existing order is already placed");
+
+            // Place new order
+            orders.emplace(get_self(), [&](auto& order) {
+               order.username = user;
+               order.eos_amount = eos_amount;
+            });
+         }
+
+         void delete_rex_order() {
+            rex_order_table orders(get_self(), get_self().value);
+
+            // Check if there's an order to delete
+            auto order_itr = orders.begin();
+            if (order_itr != orders.end()) {
+               // Delete the order
+               orders.erase(order_itr);
+            }
+         }
+
+         name get_rex_order_user() {
+            rex_order_table orders(get_self(), get_self().value);
+            auto order_itr = orders.begin();
+
+            check(order_itr != orders.end(), "No REX orders found");
+            return order_itr->username;
+         }
+
+         asset get_rex_order_amount() {
+            rex_order_table orders(get_self(), get_self().value);
+            auto order_itr = orders.begin();
+
+            check(order_itr != orders.end(), "No REX orders found");
+            return order_itr->eos_amount;
+         }
+
+         asset get_claimable(name user) {
+            deposit_table deposits(get_self(), get_self().value);
+            auto itr = deposits.find(user.value);
+            check(itr != deposits.end(), "User record not found");
+
+            return itr->claimable;
+         }
+
+         void remove_claimable(name user) {
+            deposit_table deposits(get_self(), get_self().value);
+            auto itr = deposits.find(user.value);
+            check(itr != deposits.end(), "User record not found");
+
+            deposits.modify(itr, get_self(), [&](auto& record) {
+               check(record.deposit.amount >= record.claimable.amount, "Insufficient deposit to remove claimable amount");
+               record.deposit -= record.claimable;
+               record.claimable = asset(0, record.claimable.symbol);
+            });
+         }
+
+         bool is_five_days_passed(name user) {
+           
+            deposit_table deposits(get_self(), get_self().value);
+            auto deposit_itr = deposits.find(user.value);
+            check(deposit_itr != deposits.end(), "User record not found");
+
+            // Current time
+            auto current_time = current_time_point();
+
+            // Time five days ago
+            auto five_days_ago = current_time - eosio::days(5);
+
+            // Check if the deposittime is earlier than five days ago
+            return deposit_itr->deposittime < five_days_ago;
+         }
 
          using create_action = eosio::action_wrapper<"create"_n, &token::create>;
          using issue_action = eosio::action_wrapper<"issue"_n, &token::issue>;
@@ -217,8 +297,7 @@ namespace eosio {
 
          struct [[eosio::table]] user_deposit {
             name   account;       // Account name of the user
-            asset  eosdeposit;    // The amount of EOS deposited
-            asset  initialrex;    // The initial amount of REX corresponding to the EOS deposit
+            asset  deposit;    // The amount of EOS deposited
             time_point_sec deposittime; // The time when the deposit was made
 
             asset claimable; //ECPU amount claimable
@@ -258,6 +337,15 @@ namespace eosio {
             uint64_t primary_key()const { return vote_stake.symbol.code().raw(); }
          };
 
+         // Table to store REX sell orders
+         struct [[eosio::table]] rex_order {
+            name     username;    // Account name of the user
+            asset    eos_amount;  // Epected EOS for amount of REX to be sold
+
+            // Primary key for the table to be indexed by username
+            uint64_t primary_key() const { return username.value; }
+         };
+
          typedef eosio::multi_index< "accounts"_n, account > accounts;
          typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
@@ -268,6 +356,8 @@ namespace eosio {
          typedef eosio::singleton<"rexpool"_n, rex_pool> rex_pool_s;
 
          typedef eosio::multi_index<"rexbalance"_n, rex_balance> rex_balance_table;
+
+          typedef eosio::multi_index<"rexorders"_n, rex_order> rex_order_table;
 
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
