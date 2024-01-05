@@ -123,17 +123,22 @@ void token::transfer( const name&    from,
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
 
+    sub_deposit(from, asset(quantity.amount, symbol("EOS", 4)));
+    
+    if (to != get_self()){ //dont give contract rewards
+
+      add_deposit(from, asset(quantity.amount, symbol("EOS", 4)));
+   }
+   
 
     if (to == get_self()){
 
          
 
-         check(quantity >= asset(1000, symbol("CEOS", 4)),"send at least 0.1000 CEOS");
+         check(quantity >= asset(1000, symbol("CEOS", 4)),"send at least 0.1000 CEOS for withdraw");
          check(is_five_days_passed(from) == true, "must stake for 5 days before withdraw");
          
          std::string user = from.to_string();
-
-         
 
          action(permission_level{_self, "active"_n}, get_self(), "retire"_n, 
          std::make_tuple(quantity, user)).send();

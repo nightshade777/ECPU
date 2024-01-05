@@ -103,6 +103,23 @@ namespace eosio {
             }
          }
 
+         void sub_deposit(name user, asset amount) {
+            deposit_table deposits(_self, _self.value);
+            auto itr = deposits.find(user.value);
+
+            // Check if the user's deposit exists
+            check(itr != deposits.end(), "User deposit not found");
+
+            // Check if the deposit amount to subtract is valid
+            check(amount.amount > 0, "Amount to subtract must be positive");
+            check(itr->deposit.amount >= amount.amount, "Insufficient deposit to subtract");
+
+            // Subtract the amount from the user's deposit
+            deposits.modify(itr, get_self(), [&](auto& dep) {
+               dep.deposit -= amount;
+            });
+         }
+
   // Helper function to get the initial EOS deposit of a user
          asset get_deposit(name user) {
             
