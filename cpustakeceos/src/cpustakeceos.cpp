@@ -76,27 +76,23 @@ void token::retire( const asset& quantity, const string& memo )
     check( quantity.amount > 0, "must retire positive quantity" );
 
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-
-    asset usdt = asset(1, symbol("USDT", 4));
-    asset supply = get_supply( get_self(), quantity.symbol.code());
-    asset balance = get_balance( name{"tethertether"}, get_self(), usdt.symbol.code());
+       
     
-    long double safesupply = (long double)(supply.amount)/10000/10000;
-    long double usdpool = (long double)(balance.amount)/10000;
-    long double safein = (long double)(quantity.amount)/10000/10000;
-    long double result = safein * (usdpool/safesupply);
- 
-    result *= 10000;
-    usdt.amount = result - 1; //subtract one decimal to avoid bankruupcy because safe has greater decimal place than USDT
+    //convert memo into name user
+    //sell REX, store REX sell order and username
+    //upon receiving eos from system, send to saved order
+    
+    asset eos_equivalent = asset(quantity.amount, symbol("EOS", 4));
+    asset rex = get_rex_for_eos(eos_equivalent);
 
-    check(usdt.amount > 0,"withdraw equivalent must be greater than zero");
-   
-    action(permission_level{_self, "active"_n}, "tethertether"_n, "transfer"_n, 
-    std::make_tuple(get_self(), user, usdt, std::string("SAFE withdraw to USDT"))).send();
-   
+
+    place_rex_order(user, eos_equivalent); //record rex sell/expected EOS and user
+    //sell rex here, send EOS to user inside on_notify after this
+    
     statstable.modify( st, same_payer, [&]( auto& s ) {
        s.supply -= quantity;
     });
+
 
     sub_balance( st.issuer, quantity );
 
@@ -127,10 +123,20 @@ void token::transfer( const name&    from,
     sub_balance( from, quantity );
     add_balance( to, quantity, payer );
 
+    sub_deposit(from, asset(quantity.amount, symbol("EOS", 4)));
+    
+    if (to != get_self()){ //dont give contract rewards
+
+      add_deposit(from, asset(quantity.amount, symbol("EOS", 4)));
+   }
+   
 
     if (to == get_self()){
 
-         check(quantity >= asset(10000, symbol("SAFE", 8)),"send at least 0.00010000 SAFE");
+         
+
+         check(quantity >= asset(1000, symbol("CEOS", 4)),"send at least 0.1000 CEOS for withdraw");
+         check(is_five_days_passed(from) == true, "must stake for 5 days before withdraw");
          
          std::string user = from.to_string();
 
@@ -196,78 +202,96 @@ void token::close( const name& owner, const symbol& symbol )
    acnts.erase( it );
 }
 
+[[eosio::action]]
+void token::claim( const name& user){
+   
+   require_auth( user);
+   asset ecpu = get_claimable(user);
+
+   action(permission_level{_self, "active"_n}, name{"cpumintofeos"}, "transfer"_n, 
+   std::make_tuple(get_self(), user, ecpu, string("Earn ECPU with EOS Stake, no volatility risk at ecpu.app!"))).send();
+
+
+   remove_claimable(user);
+   
+
+
+   //remove claim
+   
+}
+
+
 [[eosio::on_notify("eosio.token::transfer")]]
 void token::deposit(name from, name to, eosio::asset quantity, std::string memo){
 
+//record deposit and deposit time
 
-    if (to != get_self()){
-        return;
-    }
-
-    if (from == get_self()){
-        return;
-    }
-
-    if (memo == "refill"){
-        return;
-   }
-   
-    check (quantity.amount >= 10000, "must deposit at least 1 EOS");
-    asset balance = get_balance( name{"tethertether"}, get_self(), quantity.symbol.code());
-    asset safeissue = asset(1, symbol("SAFE", 8));
-    asset safecirculating = get_supply( get_self(), safeissue.symbol.code());
-
-   balance = balance - quantity;
-   long double safesupply = (long double)(safecirculating.amount)/10000/10000;
-   long double usdpool = (long double)(balance.amount)/10000;
-   long double usdin = (long double)(quantity.amount)/10000;
-   long double result = usdin / (usdpool/safesupply);
-
-   result = result*95/100; 
-   
-   asset svx = asset(1, symbol("SVX", 4));
-   asset svxbalance = get_balance( name{"svxmintofeos"}, get_self(), svx.symbol.code());
-   
-   
-   long double svxamt = (long double)(svxbalance.amount)/10000;
-   long double svxresult  = svxamt*usdin;
-   svx.amount = svxresult;
-
-
-   if (svx > svxbalance){
-      svx = svxbalance;
+   if (to != get_self()){
+      
+      return;
    }
 
-   result *= 10000;
-   result *= 10000;
-   safeissue.amount = result;
+   if (from == get_self()){
+      
+      return;
+   }
 
-   asset adminfee = quantity/100;
+   if (memo == "refill"){
+      
+      return;
+   }
 
-   action(permission_level{_self, "active"_n}, "tethertether"_n, "transfer"_n, 
-   std::make_tuple(get_self(), name{"safeadminacc"}, adminfee, std::string("Send for Buy Back and Burn"))).send();
+   if (memo != "deposit"){
+      //send to permanent pool if not a deposit
 
-   action(permission_level{_self, "active"_n}, "safetokenapp"_n, "issue"_n, 
-   std::make_tuple(get_self(), safeissue, std::string("Issue SAFE Tokens"))).send();
+      action(permission_level{_self, "active"_n}, name{"eosio.token"}, "transfer"_n, 
+      std::make_tuple(get_self(), name{"ecpulpholder"}, (quantity), string("deposit"))).send();
 
-   action(permission_level{_self, "active"_n}, "safetokenapp"_n, "transfer"_n, 
-   std::make_tuple(get_self(), from, safeissue, std::string("Transfer SAFE Tokens"))).send();
+      return;
 
-   if (svx.amount > 0){
+   }
 
-         action(permission_level{_self, "active"_n}, "svxmintofeos"_n, "transfer"_n, 
-         std::make_tuple(get_self(), from, svx, std::string(" SAFE Minting Reward"))).send();
-    }
+   if((from == name("eosio.rex")) && (memo == "withdraw from REX fund")){
 
+         //get existing sell order, send all to user, check against eos amount 
+         name user = get_rex_order_user();
+         asset expected_eos = get_rex_order_amount();
 
+         check (expected_eos == quantity, "expected EOS from REX not matching actual EOS received from REX Sell");
 
-    }
+         action(permission_level{_self, "active"_n}, name{"eosio.token"}, "transfer"_n, 
+         std::make_tuple(get_self(), user, quantity, string("CEOS burn & EOS withdraw, forwarding transfer from eosio.rex"))).send();
+
+         delete_rex_order();
+         
+         return;
+
+         
+
+   }
+
+    
+
+   add_deposit(from, quantity);
+   
+}
 
   [[eosio::on_notify("cpumintofeos::transfer")]]
   void token::reward(name from, name to, eosio::asset quantity, std::string memo){
 
-  }
+      if (to != get_self()){
 
-         
+         return;
+      }
+
+      distribute_reward(quantity);
+      check_and_send_excess_eos();
+
+
+  }
+    
+
+
+
 
 } /// namespace eosio

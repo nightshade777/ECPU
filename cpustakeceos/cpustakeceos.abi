@@ -14,6 +14,16 @@
             ]
         },
         {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                }
+            ]
+        },
+        {
             "name": "close",
             "base": "",
             "fields": [
@@ -110,6 +120,20 @@
             ]
         },
         {
+            "name": "rex_order",
+            "base": "",
+            "fields": [
+                {
+                    "name": "username",
+                    "type": "name"
+                },
+                {
+                    "name": "eos_amount",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "transfer",
             "base": "",
             "fields": [
@@ -130,9 +154,36 @@
                     "type": "string"
                 }
             ]
+        },
+        {
+            "name": "user_deposit",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "name"
+                },
+                {
+                    "name": "deposit",
+                    "type": "asset"
+                },
+                {
+                    "name": "deposittime",
+                    "type": "time_point_sec"
+                },
+                {
+                    "name": "claimable",
+                    "type": "asset"
+                }
+            ]
         }
     ],
     "actions": [
+        {
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": ""
+        },
         {
             "name": "close",
             "type": "close",
@@ -168,6 +219,20 @@
         {
             "name": "accounts",
             "type": "account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "deposits",
+            "type": "user_deposit",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "rexorders",
+            "type": "rex_order",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
