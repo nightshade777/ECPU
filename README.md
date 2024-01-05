@@ -13,6 +13,9 @@ Staking ECPU allows you to receive powerups automatically every 12 hours. You ca
 
 ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specified in round one has been built and is currently being tested on the Jungle3 eosio testnet.
 
+2022 UPDATE: Voting system added to allow the management of the permanent pool to be neutral and decided by the users.
+2023 UPDATE: Because of lack of funds, sufficient initial EOS pool for a sustainable systemnot able to be created, therefore a redesign was required to also give ECPU rewards to those who stake EOS.
+2024 UPDATE, Jan 2nd: Uncertainty about what proportion to give miners versus stakers has been solved by allowing ECPU holders to vote for what ratio of inflation goes to miners versus stakers. this functionality will be added to the existing voter contract. The staking contract draft has beem completed and is uploaded. Stakers will receive CEOS which is 1:1 with EOS, representing stake in REX inside the new 'cpustakeceos' contract.
 
 
 ![image](https://user-images.githubusercontent.com/51843516/151649552-f3aa08ae-e279-4dbb-bcbb-6e57c0728acc.png)
@@ -31,7 +34,9 @@ ECPU was featured in Pomelo round 1 and raised $2,200 dollars. The system specif
 
 **ecpuvotereos**: handles the token-weighted voting for proxy selection. Receives transfer notifications from **cpumintofeos** to remove votes when users transfer tokens that have been utilized for voting. The delegating or staking of tokens is not required for voting, only holding in wallet. Voting action will vote with all ECPU balance, no amount input required to be specified in the smartcontract action.
 
-Currently LP system is being integrated
+**cpustakeceos**: Handles EOS staking. Gives CEOS tokens 1:1 to users sending EOS to stake. ECPU inflation rewards sent to this contract are distributed evenly to all CEOS holders as ECPU is mined and can be claimed via "claim" action.
+
+
 
 
 
