@@ -20,7 +20,7 @@ ACTION ecpuvotereos::regproxy(name user, name proxy, name proxysender) {
  
 }
 
-ACTION ecpuvotereos::vote(name user, name proxy) {
+ACTION ecpuvotereos::voteproxy(name user, name proxy) {
   require_auth(user);
   //Three cases:
   //1. User has never voted before
@@ -78,7 +78,7 @@ ACTION ecpuvotereos::vote(name user, name proxy) {
 
           });
 
-          //add to proxt table
+          //add to proxy table
     }
 
     else {
@@ -128,6 +128,20 @@ ACTION ecpuvotereos::updateproxy(name proxy, name proxysender){
 
 }
 
+ACTION ecpuvotereos::voteinf(name user, int mine, int stake){
+
+        require_auth(user);
+        asset ecpu_balance = get_balance(name{"cpumintofeos"}, user, symbol_code("ECPU"));
+
+        check( (stake + mine) == 100, "Vote proportions must equal 100%");
+        check(stake >0 && mine>0, "Vote ratios must e bigger than zero");   
+
+        update_voting_record(user, mine, stake);
+        update_weighted_totals();
+
+
+}
+
 [[eosio::on_notify("cpumintofeos::transfer")]] void ecpuvotereos::ecputransfer(name from, name to, asset quantity, std::string memo){
 
 
@@ -171,6 +185,11 @@ ACTION ecpuvotereos::updateproxy(name proxy, name proxysender){
       }
       name proxy_w = find_winning_proxy();
       name proxysender = get_proxy_sender(proxy_w);
+
+      //inflation voting, only activates if the respective parties to & from have voted
+      remove_votes(from, quantity);
+      add_votes(to, quantity);
+      update_weighted_totals();
     
       action(permission_level{_self, "active"_n}, "ecpuvotereos"_n, "updateproxy"_n, 
             std::make_tuple(proxy_w,proxysender)).send();

@@ -26,6 +26,28 @@
             ]
         },
         {
+            "name": "infvoters",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "mine",
+                    "type": "int32"
+                },
+                {
+                    "name": "stake",
+                    "type": "int32"
+                },
+                {
+                    "name": "votes",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
             "name": "proxies",
             "base": "",
             "fields": [
@@ -62,6 +84,24 @@
             ]
         },
         {
+            "name": "total_weighted",
+            "base": "",
+            "fields": [
+                {
+                    "name": "contract_name",
+                    "type": "name"
+                },
+                {
+                    "name": "weighted_mine",
+                    "type": "int64"
+                },
+                {
+                    "name": "weighted_stake",
+                    "type": "int64"
+                }
+            ]
+        },
+        {
             "name": "updateproxy",
             "base": "",
             "fields": [
@@ -76,7 +116,25 @@
             ]
         },
         {
-            "name": "vote",
+            "name": "voteinf",
+            "base": "",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "name"
+                },
+                {
+                    "name": "mine",
+                    "type": "int32"
+                },
+                {
+                    "name": "stake",
+                    "type": "int32"
+                }
+            ]
+        },
+        {
+            "name": "voteproxy",
             "base": "",
             "fields": [
                 {
@@ -120,8 +178,13 @@
             "ricardian_contract": ""
         },
         {
-            "name": "vote",
-            "type": "vote",
+            "name": "voteinf",
+            "type": "voteinf",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "voteproxy",
+            "type": "voteproxy",
             "ricardian_contract": ""
         }
     ],
@@ -134,8 +197,22 @@
             "key_types": []
         },
         {
+            "name": "infvoters",
+            "type": "infvoters",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
             "name": "proxies",
             "type": "proxies",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "totalweight",
+            "type": "total_weighted",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
